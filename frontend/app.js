@@ -15,6 +15,19 @@ const TYPE_LABELS = {
   emotion_care: '情绪关怀',
 };
 
+const token = localStorage.getItem('token');
+if (!token) location.href = 'login.html';
+
+function authFetch(url, options = {}) {
+  return fetch(url, {
+    ...options,
+    headers: { ...(options.headers || {}), 'Authorization': `Bearer ${token}` },
+  }).then(res => {
+    if (res.status === 401) { localStorage.removeItem('token'); location.href = 'login.html'; }
+    return res;
+  });
+}
+
 let profile = { name: '小暖', avatar_emoji: '🌸', personality: '温柔体贴', speaking_style: '亲密随意' };
 let pendingEvents = [];
 let currentEventId = null;
@@ -29,7 +42,7 @@ async function init() {
 
 async function loadProfile() {
   try {
-    const res = await fetch('/profile');
+    const res = await authFetch('/profile');
     profile = await res.json();
     updateProfileUI();
   } catch (e) {
@@ -48,7 +61,7 @@ function updateProfileUI() {
 
 async function loadHistory() {
   try {
-    const res = await fetch('/history?limit=30');
+    const res = await authFetch('/history?limit=30');
     const { messages } = await res.json();
     const container = document.getElementById('messages');
     if (!container) return;
@@ -146,7 +159,7 @@ async function sendMessage() {
   let botText = '';
 
   try {
-    const res = await fetch('/chat', {
+    const res = await authFetch('/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: text }),
@@ -243,7 +256,7 @@ function startEventPolling() {
 
 async function checkEvents() {
   try {
-    const res = await fetch('/events/pending');
+    const res = await authFetch('/events/pending');
     const { events } = await res.json();
     pendingEvents = events;
     const badge = document.getElementById('bellBadge');
@@ -277,7 +290,7 @@ function showNextEvent() {
 
 async function dismissCurrentEvent() {
   if (currentEventId === null) return;
-  await fetch(`/events/${currentEventId}/dismiss`, { method: 'POST' });
+  await authFetch(`/events/${currentEventId}/dismiss`, { method: 'POST' });
   pendingEvents = pendingEvents.filter(e => e.id !== currentEventId);
   currentEventId = null;
   document.getElementById('eventModal').classList.add('hidden');

@@ -73,6 +73,19 @@
 <div class="toast" id="toast"></div>
 
 <script>
+const token = localStorage.getItem('token');
+if (!token) location.href = 'login.html';
+
+function authFetch(url, options = {}) {
+  return fetch(url, {
+    ...options,
+    headers: { ...(options.headers || {}), 'Authorization': `Bearer ${token}` },
+  }).then(res => {
+    if (res.status === 401) { localStorage.removeItem('token'); location.href = 'login.html'; }
+    return res;
+  });
+}
+
 const MOOD_LABELS = { 2: '很差', 4: '不好', 6: '一般', 8: '不错', 10: '很好' };
 let selectedMood = 6;
 let moodChart = null;
@@ -112,7 +125,7 @@ document.getElementById('saveDiaryBtn').addEventListener('click', async () => {
   btn.textContent = '保存中...';
 
   try {
-    await fetch('/diary', {
+    await authFetch('/diary', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content, mood_score: selectedMood }),
@@ -131,7 +144,7 @@ document.getElementById('saveDiaryBtn').addEventListener('click', async () => {
 
 // 加载日记列表
 async function loadDiaryList() {
-  const res = await fetch('/diary?limit=30');
+  const res = await authFetch('/diary?limit=30');
   const { entries } = await res.json();
   const container = document.getElementById('diaryList');
 
@@ -153,7 +166,7 @@ async function loadDiaryList() {
 
 // 加载心情图表
 async function loadMoodChart() {
-  const res = await fetch('/mood/history?days=14');
+  const res = await authFetch('/mood/history?days=14');
   const { data } = await res.json();
 
   const labels = data.map(d => d.date.slice(5));

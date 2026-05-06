@@ -72,6 +72,7 @@
   </div>
 
   <button class="save-btn" id="saveBtn">保存设置</button>
+  <button class="logout-btn" id="logoutBtn">退出登录</button>
 
 </div>
 
@@ -90,6 +91,19 @@
 <div class="toast" id="toast"></div>
 
 <script>
+const token = localStorage.getItem('token');
+if (!token) location.href = 'login.html';
+
+function authFetch(url, options = {}) {
+  return fetch(url, {
+    ...options,
+    headers: { ...(options.headers || {}), 'Authorization': `Bearer ${token}` },
+  }).then(res => {
+    if (res.status === 401) { localStorage.removeItem('token'); location.href = 'login.html'; }
+    return res;
+  });
+}
+
 let selectedEmoji = '🌸';
 let selectedPersonality = '温柔体贴';
 let selectedStyle = '亲密随意';
@@ -110,7 +124,7 @@ function updatePreview() {
 // 加载当前配置
 async function loadProfile() {
   try {
-    const res = await fetch('/profile');
+    const res = await authFetch('/profile');
     const p = await res.json();
     document.getElementById('nameInput').value = p.name || '';
     selectedEmoji = p.avatar_emoji || '🌸';
@@ -199,7 +213,7 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
   btn.textContent = '保存中...';
 
   try {
-    await fetch('/profile', {
+    await authFetch('/profile', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -219,6 +233,11 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
 });
 
 loadProfile();
+
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  localStorage.removeItem('token');
+  location.href = 'login.html';
+});
 </script>
 </body>
 </html>

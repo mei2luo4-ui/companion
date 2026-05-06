@@ -4,10 +4,15 @@ import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+import hashlib
+import hmac
+from datetime import datetime, timedelta
+
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 load_dotenv()
 
@@ -21,10 +26,47 @@ from .database import (
     add_diary,
     get_diary_list,
     get_mood_history,
+    create_user,
+    get_user_by_username,
 )
 from .companion import chat_stream
 from .events import event_scheduler_loop
-from .models import ChatRequest, DiaryRequest, ProfileRequest
+from .models import ChatRequest, DiaryRequest, ProfileRequest, RegisterRequest, LoginRequest
+
+SECRET_KEY = os.getenv("SECRET_KEY", "change-me-in-production")
+
+
+def _hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode()).hexdigest()
+
+
+def _create_token(user_id: int) -> str:
+    expire = datetime.utcnow() + timedelta(days=30)
+    payload = f"{user_id}:{expire.isoformat()}"
+    sig = hmac.new(SECRET_KEY.encode(), payload.encode(), hashlib.sha256).hexdigest()
+    return f"{payload}:{sig}"
+
+
+def _verify_token(token: str) -> int:
+    try:
+        parts = token.rsplit(":", 1)
+        payload, sig = parts[0], parts[1]
+        expected = hmac.new(SECRET_KEY.encode(), payload.encode(), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(sig, expected):
+            raise ValueError
+        user_id_str, expire_str = payload.split(":", 1)
+        if datetime.fromisoformat(expire_str) < datetime.utcnow():
+            raise ValueError
+        return int(user_id_str)
+    except Exception:
+        raise HTTPException(status_code=401, detail="未登录或登录已过期")
+
+
+bearer = HTTPBearer()
+
+
+def get_current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)) -> int:
+    return _verify_token(creds.credentials)
 
 
 @asynccontextmanager
@@ -40,14 +82,33 @@ app = FastAPI(title="情感陪伴体", lifespan=lifespan)
 FRONTEND_DIR = Path(__file__).parent.parent / "frontend"
 
 
+@app.post("/auth/register")
+async def register(req: RegisterRequest):
+    if len(req.username) < 2 or len(req.password) < 6:
+        raise HTTPException(status_code=400, detail="用户名至少2位，密码至少6位")
+    existing = await get_user_by_username(req.username)
+    if existing:
+        raise HTTPException(status_code=400, detail="用户名已存在")
+    user_id = await create_user(req.username, _hash_password(req.password))
+    return {"token": _create_token(user_id)}
+
+
+@app.post("/auth/login")
+async def login(req: LoginRequest):
+    user = await get_user_by_username(req.username)
+    if not user or user["password_hash"] != _hash_password(req.password):
+        raise HTTPException(status_code=401, detail="用户名或密码错误")
+    return {"token": _create_token(user["id"])}
+
+
 @app.post("/chat")
-async def chat(req: ChatRequest):
+async def chat(req: ChatRequest, user_id: int = Depends(get_current_user)):
     if not req.message.strip():
         raise HTTPException(status_code=400, detail="消息不能为空")
 
     async def generate():
         try:
-            async for kind, data in chat_stream(req.message):
+            async for kind, data in chat_stream(user_id, req.message):
                 if kind == "text":
                     payload = json.dumps({"type": "text", "content": data}, ensure_ascii=False)
                 else:
@@ -61,49 +122,49 @@ async def chat(req: ChatRequest):
 
 
 @app.get("/history")
-async def history(limit: int = 30):
-    messages = await get_recent_messages(limit)
+async def history(limit: int = 30, user_id: int = Depends(get_current_user)):
+    messages = await get_recent_messages(user_id, limit)
     return {"messages": messages}
 
 
 @app.get("/events/pending")
-async def pending_events():
-    events = await get_pending_events()
+async def pending_events(user_id: int = Depends(get_current_user)):
+    events = await get_pending_events(user_id)
     return {"events": events}
 
 
 @app.post("/events/{event_id}/dismiss")
-async def dismiss(event_id: int):
-    await dismiss_event(event_id)
+async def dismiss(event_id: int, user_id: int = Depends(get_current_user)):
+    await dismiss_event(user_id, event_id)
     return {"ok": True}
 
 
 @app.post("/diary")
-async def create_diary(req: DiaryRequest):
-    entry_id = await add_diary(req.content, req.mood_score, req.tags)
+async def create_diary(req: DiaryRequest, user_id: int = Depends(get_current_user)):
+    entry_id = await add_diary(user_id, req.content, req.mood_score, req.tags)
     return {"id": entry_id}
 
 
 @app.get("/diary")
-async def list_diary(limit: int = 30):
-    entries = await get_diary_list(limit)
+async def list_diary(limit: int = 30, user_id: int = Depends(get_current_user)):
+    entries = await get_diary_list(user_id, limit)
     return {"entries": entries}
 
 
 @app.get("/mood/history")
-async def mood_history(days: int = 14):
-    data = await get_mood_history(days)
+async def mood_history(days: int = 14, user_id: int = Depends(get_current_user)):
+    data = await get_mood_history(user_id, days)
     return {"data": data}
 
 
 @app.get("/profile")
-async def profile():
-    return await get_profile()
+async def profile(user_id: int = Depends(get_current_user)):
+    return await get_profile(user_id)
 
 
 @app.post("/profile")
-async def save_profile(req: ProfileRequest):
-    await update_profile(req.name, req.personality, req.speaking_style, req.avatar_emoji)
+async def save_profile(req: ProfileRequest, user_id: int = Depends(get_current_user)):
+    await update_profile(user_id, req.name, req.personality, req.speaking_style, req.avatar_emoji)
     return {"ok": True}
 
 

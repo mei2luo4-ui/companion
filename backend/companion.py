@@ -52,15 +52,10 @@ score表示该情绪的强度，0为最弱，10为最强。
 分析的是用户消息中表达的情绪，不是你自己的情绪。"""
 
 
-async def chat_stream(user_message: str):
-    """
-    流式生成回复。yield 两种类型：
-    - ("text", chunk)
-    - ("emotion", {"label": ..., "score": ...})
-    """
-    profile = await db.get_profile()
-    memories = await db.get_memories()
-    history = await db.get_recent_messages(20)
+async def chat_stream(user_id: int, user_message: str):
+    profile = await db.get_profile(user_id)
+    memories = await db.get_memories(user_id)
+    history = await db.get_recent_messages(user_id, 20)
 
     system_prompt = build_system_prompt(profile, memories)
 
@@ -130,23 +125,24 @@ async def chat_stream(user_message: str):
 
     try:
         clean_response = re.sub(r"\n*__EMOTION__:.*$", "", full_response, flags=re.DOTALL).strip()
-        await db.add_message("user", user_message)
+        await db.add_message(user_id, "user", user_message)
         await db.add_message(
+            user_id,
             "assistant",
             clean_response,
             emotion_label=emotion_data["label"],
             emotion_score=emotion_data["score"],
         )
 
-        count = await db.count_messages()
+        count = await db.count_messages(user_id)
         if count > 0 and count % 10 == 0:
-            await _summarize_memories()
+            await _summarize_memories(user_id)
     except Exception:
         pass
 
 
-async def _summarize_memories():
-    history = await db.get_recent_messages(30)
+async def _summarize_memories(user_id: int):
+    history = await db.get_recent_messages(user_id, 30)
     if not history:
         return
 
@@ -175,7 +171,7 @@ async def _summarize_memories():
     for summary in summaries:
         summary = summary.strip().lstrip("-•·").strip()
         if summary:
-            await db.add_memory(summary, importance=5)
+            await db.add_memory(user_id, summary, importance=5)
 
 
 async def generate_event_content(event_type: str, profile: dict, recent_emotions: list[dict]) -> dict:

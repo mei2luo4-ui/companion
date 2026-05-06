@@ -618,3 +618,88 @@ body {
   font-size: 15px;
 }
 .empty-state .empty-icon { font-size: 40px; margin-bottom: 12px; }
+
+/* ===== 登录页 ===== */
+body.auth-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #fff0f3 0%, #ffe4ec 100%);
+}
+
+.auth-card {
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 36px 28px;
+  box-shadow: 0 8px 32px rgba(255,143,163,0.2);
+  width: 100%;
+  max-width: 360px;
+}
+
+.auth-logo { font-size: 48px; text-align: center; margin-bottom: 8px; }
+.auth-title { font-size: 22px; font-weight: 600; text-align: center; margin-bottom: 24px; color: var(--text); }
+
+.auth-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 20px;
+  border-bottom: 2px solid var(--border);
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 10px;
+  background: none;
+  border: none;
+  font-size: 15px;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-family: inherit;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s;
+}
+.auth-tab.active { color: var(--primary-dark); border-bottom-color: var(--primary); font-weight: 500; }
+
+.auth-input {
+  display: block;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  font-family: inherit;
+  outline: none;
+  background: var(--surface);
+  margin-bottom: 12px;
+  transition: border-color 0.2s;
+}
+.auth-input:focus { border-color: var(--primary); }
+
+.auth-btn { width: 100%; padding: 13px; font-size: 16px; margin-top: 4px; }
+
+.auth-error {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: #fff0f0;
+  border-radius: var(--radius-sm);
+  color: #e53935;
+  font-size: 14px;
+}
+
+/* ===== 登出按钮 ===== */
+.logout-btn {
+  width: 100%;
+  padding: 13px;
+  background: none;
+  color: var(--text-muted);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 15px;
+  cursor: pointer;
+  margin-top: 12px;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+.logout-btn:hover { border-color: #e53935; color: #e53935; }

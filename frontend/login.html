@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>情感陪伴体 - 登录</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="auth-page">
+  <div class="auth-card">
+    <div class="auth-logo">🌸</div>
+    <h1 class="auth-title">情感陪伴体</h1>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabLogin">登录</button>
+      <button class="auth-tab" id="tabRegister">注册</button>
+    </div>
+
+    <div id="loginForm">
+      <input class="auth-input" id="loginUsername" type="text" placeholder="用户名" maxlength="20">
+      <input class="auth-input" id="loginPassword" type="password" placeholder="密码" maxlength="50">
+      <button class="btn-primary auth-btn" id="loginBtn">登录</button>
+    </div>
+
+    <div id="registerForm" class="hidden">
+      <input class="auth-input" id="regUsername" type="text" placeholder="用户名（至少2位）" maxlength="20">
+      <input class="auth-input" id="regPassword" type="password" placeholder="密码（至少6位）" maxlength="50">
+      <button class="btn-primary auth-btn" id="registerBtn">注册</button>
+    </div>
+
+    <div class="auth-error hidden" id="authError"></div>
+  </div>
+
+  <script>
+    if (localStorage.getItem('token')) location.href = 'index.html';
+
+    const tabLogin = document.getElementById('tabLogin');
+    const tabRegister = document.getElementById('tabRegister');
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const authError = document.getElementById('authError');
+
+    tabLogin.addEventListener('click', () => {
+      tabLogin.classList.add('active');
+      tabRegister.classList.remove('active');
+      loginForm.classList.remove('hidden');
+      registerForm.classList.add('hidden');
+      authError.classList.add('hidden');
+    });
+
+    tabRegister.addEventListener('click', () => {
+      tabRegister.classList.add('active');
+      tabLogin.classList.remove('active');
+      registerForm.classList.remove('hidden');
+      loginForm.classList.add('hidden');
+      authError.classList.add('hidden');
+    });
+
+    function showError(msg) {
+      authError.textContent = msg;
+      authError.classList.remove('hidden');
+    }
+
+    async function doAuth(url, username, password) {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || '请求失败');
+      return data.token;
+    }
+
+    document.getElementById('loginBtn').addEventListener('click', async () => {
+      const username = document.getElementById('loginUsername').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      if (!username || !password) return showError('请填写用户名和密码');
+      try {
+        const token = await doAuth('/auth/login', username, password);
+        localStorage.setItem('token', token);
+        location.href = 'index.html';
+      } catch (e) {
+        showError(e.message);
+      }
+    });
+
+    document.getElementById('registerBtn').addEventListener('click', async () => {
+      const username = document.getElementById('regUsername').value.trim();
+      const password = document.getElementById('regPassword').value;
+      if (!username || !password) return showError('请填写用户名和密码');
+      try {
+        const token = await doAuth('/auth/register', username, password);
+        localStorage.setItem('token', token);
+        location.href = 'index.html';
+      } catch (e) {
+        showError(e.message);
+      }
+    });
+
+    [document.getElementById('loginPassword'), document.getElementById('regPassword')].forEach(el => {
+      el.addEventListener('keydown', e => { if (e.key === 'Enter') e.target.closest('div').querySelector('button').click(); });
+    });
+  </script>
+</body>
+</html>
