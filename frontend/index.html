@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>情感陪伴体</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- 顶部栏 -->
+<div class="topbar">
+  <div class="companion-info">
+    <div class="avatar" id="topAvatar">🌸</div>
+    <div>
+      <div class="companion-name" id="topName">小暖</div>
+      <div class="emotion-status">
+        <div class="emotion-dot" id="emotionDot"></div>
+        <span id="emotionLabel">平静</span>
+      </div>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <button class="bell-btn" id="bellBtn" title="查看通知" aria-label="查看通知">
+      🔔
+      <div class="bell-badge" id="bellBadge"></div>
+    </button>
+  </div>
+</div>
+
+<!-- 聊天消息区 -->
+<div class="chat-container">
+  <div class="messages" id="messages" role="log" aria-live="polite" aria-label="聊天记录"></div>
+</div>
+
+<!-- 输入区 -->
+<div class="input-area">
+  <div class="input-row">
+    <textarea
+      id="inputBox"
+      placeholder="和我说说话吧..."
+      rows="1"
+      aria-label="消息输入框"
+      maxlength="2000"
+    ></textarea>
+    <button class="send-btn" id="sendBtn" aria-label="发送消息">➤</button>
+  </div>
+</div>
+
+<!-- 底部导航 -->
+<nav class="bottomnav" aria-label="主导航">
+  <a href="index.html" class="nav-item active" aria-current="page">
+    <span>💬</span>
+    <span>聊天</span>
+  </a>
+  <a href="diary.html" class="nav-item">
+    <span>📔</span>
+    <span>日记</span>
+  </a>
+  <a href="settings.html" class="nav-item">
+    <span>⚙️</span>
+    <span>设置</span>
+  </a>
+</nav>
+
+<!-- 事件弹窗 -->
+<div class="modal-overlay hidden" id="eventModal" role="dialog" aria-modal="true" aria-labelledby="eventTitle">
+  <div class="event-card">
+    <div class="event-header">
+      <span class="event-type-badge" id="eventTypeBadge">通知</span>
+    </div>
+    <div class="event-title" id="eventTitle"></div>
+    <div class="event-content" id="eventContent"></div>
+    <div class="event-actions">
+      <button class="btn-primary" id="eventReplyBtn">回复她</button>
+      <button class="btn-ghost" id="eventDismissBtn">稍后再说</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>日记 — 情感陪伴体</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="companion-info">
+    <div style="font-size:22px">📔</div>
+    <div>
+      <div class="companion-name">我的日记</div>
+      <div class="emotion-status"><span>心情追踪</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="page-container">
+
+  <!-- 心情折线图 -->
+  <div class="chart-card">
+    <div class="chart-title">近14天心情趋势</div>
+    <canvas id="moodChart" height="120" aria-label="心情趋势图" role="img"></canvas>
+  </div>
+
+  <!-- 写日记 -->
+  <div class="diary-form">
+    <div class="settings-label">今天的心情</div>
+    <div class="mood-selector" id="moodSelector" role="group" aria-label="选择心情分数">
+      <button class="mood-btn" data-score="2" aria-pressed="false">😢 很差</button>
+      <button class="mood-btn" data-score="4" aria-pressed="false">😕 不好</button>
+      <button class="mood-btn selected" data-score="6" aria-pressed="true">😐 一般</button>
+      <button class="mood-btn" data-score="8" aria-pressed="false">😊 不错</button>
+      <button class="mood-btn" data-score="10" aria-pressed="false">😄 很好</button>
+    </div>
+    <textarea
+      class="diary-textarea"
+      id="diaryInput"
+      placeholder="写下今天的心情和故事..."
+      aria-label="日记内容"
+      maxlength="5000"
+    ></textarea>
+    <button class="save-btn" id="saveDiaryBtn" style="margin-top:12px">保存日记</button>
+  </div>
+
+  <!-- 日记列表 -->
+  <div class="page-title">历史日记</div>
+  <div id="diaryList" class="diary-list">
+    <div class="empty-state">
+      <div class="empty-icon">📝</div>
+      <div>还没有日记，写下今天的第一篇吧</div>
+    </div>
+  </div>
+
+</div>
+
+<nav class="bottomnav" aria-label="主导航">
+  <a href="index.html" class="nav-item">
+    <span>💬</span><span>聊天</span>
+  </a>
+  <a href="diary.html" class="nav-item active" aria-current="page">
+    <span>📔</span><span>日记</span>
+  </a>
+  <a href="settings.html" class="nav-item">
+    <span>⚙️</span><span>设置</span>
+  </a>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const MOOD_LABELS = { 2: '很差', 4: '不好', 6: '一般', 8: '不错', 10: '很好' };
+let selectedMood = 6;
+let moodChart = null;
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function formatDate(iso) {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+// 心情选择
+document.getElementById('moodSelector').addEventListener('click', (e) => {
+  const btn = e.target.closest('.mood-btn');
+  if (!btn) return;
+  document.querySelectorAll('.mood-btn').forEach(b => {
+    b.classList.remove('selected');
+    b.setAttribute('aria-pressed', 'false');
+  });
+  btn.classList.add('selected');
+  btn.setAttribute('aria-pressed', 'true');
+  selectedMood = parseInt(btn.dataset.score);
+});
+
+// 保存日记
+document.getElementById('saveDiaryBtn').addEventListener('click', async () => {
+  const content = document.getElementById('diaryInput').value.trim();
+  if (!content) { showToast('请先写点什么'); return; }
+
+  const btn = document.getElementById('saveDiaryBtn');
+  btn.disabled = true;
+  btn.textContent = '保存中...';
+
+  try {
+    await fetch('/diary', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content, mood_score: selectedMood }),
+    });
+    document.getElementById('diaryInput').value = '';
+    showToast('日记已保存 ✓');
+    await loadDiaryList();
+    await loadMoodChart();
+  } catch (e) {
+    showToast('保存失败，请重试');
+  }
+
+  btn.disabled = false;
+  btn.textContent = '保存日记';
+});
+
+// 加载日记列表
+async function loadDiaryList() {
+  const res = await fetch('/diary?limit=30');
+  const { entries } = await res.json();
+  const container = document.getElementById('diaryList');
+
+  if (!entries.length) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📝</div><div>还没有日记，写下今天的第一篇吧</div></div>';
+    return;
+  }
+
+  container.innerHTML = entries.map(e => `
+    <div class="diary-card">
+      <div class="diary-meta">
+        <span>${formatDate(e.created_at)}</span>
+        ${e.mood_score ? `<span class="diary-mood-badge">${MOOD_LABELS[e.mood_score] || e.mood_score}</span>` : ''}
+      </div>
+      <div class="diary-content">${escapeHtml(e.content)}</div>
+    </div>
+  `).join('');
+}
+
+// 加载心情图表
+async function loadMoodChart() {
+  const res = await fetch('/mood/history?days=14');
+  const { data } = await res.json();
+
+  const labels = data.map(d => d.date.slice(5));
+  const scores = data.map(d => parseFloat(d.avg_score.toFixed(1)));
+
+  const ctx = document.getElementById('moodChart').getContext('2d');
+
+  if (moodChart) moodChart.destroy();
+
+  if (!data.length) {
+    ctx.fillStyle = '#9e7c84';
+    ctx.font = '14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('暂无数据，开始聊天后会自动记录心情', ctx.canvas.width / 2, 60);
+    return;
+  }
+
+  moodChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: '心情指数',
+        data: scores,
+        borderColor: '#ff8fa3',
+        backgroundColor: 'rgba(255,143,163,0.1)',
+        borderWidth: 2.5,
+        pointBackgroundColor: '#ff8fa3',
+        pointRadius: 4,
+        tension: 0.4,
+        fill: true,
+      }],
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          min: 0, max: 10,
+          ticks: { stepSize: 2, color: '#9e7c84' },
+          grid: { color: '#f5d0d8' },
+        },
+        x: { ticks: { color: '#9e7c84' }, grid: { display: false } },
+      },
+    },
+  });
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// 初始化
+loadDiaryList();
+loadMoodChart();
+</script>
+</body>
+</html>

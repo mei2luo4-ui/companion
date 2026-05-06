@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>设置 — 情感陪伴体</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="companion-info">
+    <div style="font-size:22px">⚙️</div>
+    <div>
+      <div class="companion-name">陪伴体设置</div>
+      <div class="emotion-status"><span>个性化定制</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="page-container">
+
+  <!-- 预览卡 -->
+  <div class="settings-section" style="text-align:center; padding:28px 20px;">
+    <div style="font-size:52px; margin-bottom:10px;" id="previewAvatar">🌸</div>
+    <div style="font-size:20px; font-weight:600;" id="previewName">小暖</div>
+    <div style="font-size:13px; color:var(--text-muted); margin-top:4px;" id="previewDesc">温柔体贴 · 亲密随意</div>
+  </div>
+
+  <!-- 名字 -->
+  <div class="settings-section">
+    <div class="settings-label">陪伴体名字</div>
+    <input class="settings-input" id="nameInput" type="text" placeholder="给她起个名字" maxlength="10" aria-label="陪伴体名字">
+  </div>
+
+  <!-- 头像 -->
+  <div class="settings-section">
+    <div class="settings-label">头像</div>
+    <div class="emoji-grid" id="emojiGrid" role="group" aria-label="选择头像">
+      <button class="emoji-btn selected" data-emoji="🌸" aria-pressed="true">🌸</button>
+      <button class="emoji-btn" data-emoji="🌺" aria-pressed="false">🌺</button>
+      <button class="emoji-btn" data-emoji="🌼" aria-pressed="false">🌼</button>
+      <button class="emoji-btn" data-emoji="⭐" aria-pressed="false">⭐</button>
+      <button class="emoji-btn" data-emoji="🦋" aria-pressed="false">🦋</button>
+      <button class="emoji-btn" data-emoji="🐱" aria-pressed="false">🐱</button>
+      <button class="emoji-btn" data-emoji="🐻" aria-pressed="false">🐻</button>
+      <button class="emoji-btn" data-emoji="🌙" aria-pressed="false">🌙</button>
+      <button class="emoji-btn" data-emoji="☀️" aria-pressed="false">☀️</button>
+      <button class="emoji-btn" data-emoji="🍀" aria-pressed="false">🍀</button>
+    </div>
+  </div>
+
+  <!-- 性格 -->
+  <div class="settings-section">
+    <div class="settings-label">性格</div>
+    <div class="option-grid" id="personalityGrid" role="group" aria-label="选择性格">
+      <button class="option-btn selected" data-value="温柔体贴" aria-pressed="true">温柔体贴</button>
+      <button class="option-btn" data-value="活泼开朗" aria-pressed="false">活泼开朗</button>
+      <button class="option-btn" data-value="沉稳知性" aria-pressed="false">沉稳知性</button>
+      <button class="option-btn" data-value="俏皮搞怪" aria-pressed="false">俏皮搞怪</button>
+    </div>
+  </div>
+
+  <!-- 说话风格 -->
+  <div class="settings-section">
+    <div class="settings-label">说话风格</div>
+    <div class="option-grid" id="styleGrid" role="group" aria-label="选择说话风格">
+      <button class="option-btn selected" data-value="亲密随意" aria-pressed="true">亲密随意</button>
+      <button class="option-btn" data-value="正式" aria-pressed="false">正式得体</button>
+      <button class="option-btn" data-value="文艺诗意" aria-pressed="false">文艺诗意</button>
+    </div>
+  </div>
+
+  <button class="save-btn" id="saveBtn">保存设置</button>
+
+</div>
+
+<nav class="bottomnav" aria-label="主导航">
+  <a href="index.html" class="nav-item">
+    <span>💬</span><span>聊天</span>
+  </a>
+  <a href="diary.html" class="nav-item">
+    <span>📔</span><span>日记</span>
+  </a>
+  <a href="settings.html" class="nav-item active" aria-current="page">
+    <span>⚙️</span><span>设置</span>
+  </a>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let selectedEmoji = '🌸';
+let selectedPersonality = '温柔体贴';
+let selectedStyle = '亲密随意';
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function updatePreview() {
+  document.getElementById('previewAvatar').textContent = selectedEmoji;
+  document.getElementById('previewName').textContent = document.getElementById('nameInput').value || '小暖';
+  document.getElementById('previewDesc').textContent = `${selectedPersonality} · ${selectedStyle}`;
+}
+
+// 加载当前配置
+async function loadProfile() {
+  try {
+    const res = await fetch('/profile');
+    const p = await res.json();
+    document.getElementById('nameInput').value = p.name || '';
+    selectedEmoji = p.avatar_emoji || '🌸';
+    selectedPersonality = p.personality || '温柔体贴';
+    selectedStyle = p.speaking_style || '亲密随意';
+    syncUI();
+    updatePreview();
+  } catch (e) {
+    console.error('加载配置失败', e);
+  }
+}
+
+function syncUI() {
+  // 头像
+  document.querySelectorAll('#emojiGrid .emoji-btn').forEach(btn => {
+    const active = btn.dataset.emoji === selectedEmoji;
+    btn.classList.toggle('selected', active);
+    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+  // 性格
+  document.querySelectorAll('#personalityGrid .option-btn').forEach(btn => {
+    const active = btn.dataset.value === selectedPersonality;
+    btn.classList.toggle('selected', active);
+    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+  // 风格
+  document.querySelectorAll('#styleGrid .option-btn').forEach(btn => {
+    const active = btn.dataset.value === selectedStyle;
+    btn.classList.toggle('selected', active);
+    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+}
+
+// 头像选择
+document.getElementById('emojiGrid').addEventListener('click', (e) => {
+  const btn = e.target.closest('.emoji-btn');
+  if (!btn) return;
+  selectedEmoji = btn.dataset.emoji;
+  document.querySelectorAll('#emojiGrid .emoji-btn').forEach(b => {
+    b.classList.remove('selected');
+    b.setAttribute('aria-pressed', 'false');
+  });
+  btn.classList.add('selected');
+  btn.setAttribute('aria-pressed', 'true');
+  updatePreview();
+});
+
+// 性格选择
+document.getElementById('personalityGrid').addEventListener('click', (e) => {
+  const btn = e.target.closest('.option-btn');
+  if (!btn) return;
+  selectedPersonality = btn.dataset.value;
+  document.querySelectorAll('#personalityGrid .option-btn').forEach(b => {
+    b.classList.remove('selected');
+    b.setAttribute('aria-pressed', 'false');
+  });
+  btn.classList.add('selected');
+  btn.setAttribute('aria-pressed', 'true');
+  updatePreview();
+});
+
+// 风格选择
+document.getElementById('styleGrid').addEventListener('click', (e) => {
+  const btn = e.target.closest('.option-btn');
+  if (!btn) return;
+  selectedStyle = btn.dataset.value;
+  document.querySelectorAll('#styleGrid .option-btn').forEach(b => {
+    b.classList.remove('selected');
+    b.setAttribute('aria-pressed', 'false');
+  });
+  btn.classList.add('selected');
+  btn.setAttribute('aria-pressed', 'true');
+  updatePreview();
+});
+
+// 名字输入实时预览
+document.getElementById('nameInput').addEventListener('input', updatePreview);
+
+// 保存
+document.getElementById('saveBtn').addEventListener('click', async () => {
+  const name = document.getElementById('nameInput').value.trim();
+  if (!name) { showToast('请填写陪伴体名字'); return; }
+
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.textContent = '保存中...';
+
+  try {
+    await fetch('/profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        personality: selectedPersonality,
+        speaking_style: selectedStyle,
+        avatar_emoji: selectedEmoji,
+      }),
+    });
+    showToast('设置已保存 ✓');
+  } catch (e) {
+    showToast('保存失败，请重试');
+  }
+
+  btn.disabled = false;
+  btn.textContent = '保存设置';
+});
+
+loadProfile();
+</script>
+</body>
+</html>
