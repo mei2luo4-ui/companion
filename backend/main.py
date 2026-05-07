@@ -41,7 +41,7 @@ def _hash_password(password: str) -> str:
 
 
 def _create_token(user_id: int) -> str:
-    expire = datetime.utcnow() + timedelta(days=30)
+    expire = datetime.now() + timedelta(days=30)
     payload = f"{user_id}:{expire.isoformat()}"
     sig = hmac.new(SECRET_KEY.encode(), payload.encode(), hashlib.sha256).hexdigest()
     return f"{payload}:{sig}"
@@ -55,7 +55,7 @@ def _verify_token(token: str) -> int:
         if not hmac.compare_digest(sig, expected):
             raise ValueError
         user_id_str, expire_str = payload.split(":", 1)
-        if datetime.fromisoformat(expire_str) < datetime.utcnow():
+        if datetime.fromisoformat(expire_str) < datetime.now():
             raise ValueError
         return int(user_id_str)
     except Exception:

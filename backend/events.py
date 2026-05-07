@@ -43,7 +43,7 @@ async def _check_for_user(user_id: int):
 async def _create_event(user_id: int, event_type: str, profile: dict, recent_emotions: list[dict]):
     try:
         data = await companion.generate_event_content(event_type, profile, recent_emotions)
-        scheduled_at = datetime.utcnow().isoformat()
+        scheduled_at = datetime.now().isoformat()
         await db.add_event(user_id, event_type, data["title"], data["content"], scheduled_at)
     except Exception:
         pass  # 事件生成失败静默处理，不影响主流程

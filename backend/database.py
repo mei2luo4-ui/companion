@@ -74,7 +74,7 @@ async def init_db():
 
 
 async def create_user(username: str, password_hash: str) -> int:
-    now = datetime.utcnow().isoformat()
+    now = datetime.now().isoformat()
     async with aiosqlite.connect(DB_PATH) as db:
         cursor = await db.execute(
             "INSERT INTO users (username, password_hash, created_at) VALUES (?,?,?)",
@@ -106,7 +106,7 @@ async def get_profile(user_id: int) -> dict:
 
 
 async def update_profile(user_id: int, name: str, personality: str, speaking_style: str, avatar_emoji: str):
-    now = datetime.utcnow().isoformat()
+    now = datetime.now().isoformat()
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
             "UPDATE profile SET name=?, personality=?, speaking_style=?, avatar_emoji=?, updated_at=? WHERE user_id=?",
@@ -116,7 +116,7 @@ async def update_profile(user_id: int, name: str, personality: str, speaking_sty
 
 
 async def add_message(user_id: int, role: str, content: str, emotion_label: str = None, emotion_score: float = None) -> int:
-    now = datetime.utcnow().isoformat()
+    now = datetime.now().isoformat()
     async with aiosqlite.connect(DB_PATH) as db:
         cursor = await db.execute(
             "INSERT INTO messages (user_id, role, content, emotion_label, emotion_score, created_at) VALUES (?,?,?,?,?,?)",
@@ -153,7 +153,7 @@ async def get_memories(user_id: int) -> list[dict]:
 
 
 async def add_memory(user_id: int, summary: str, importance: int = 5):
-    now = datetime.utcnow().isoformat()
+    now = datetime.now().isoformat()
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
             "INSERT INTO memories (user_id, summary, importance, created_at) VALUES (?,?,?,?)",
@@ -167,7 +167,7 @@ async def add_memory(user_id: int, summary: str, importance: int = 5):
 
 
 async def add_diary(user_id: int, content: str, mood_score: float = None, tags: str = None) -> int:
-    now = datetime.utcnow().isoformat()
+    now = datetime.now().isoformat()
     async with aiosqlite.connect(DB_PATH) as db:
         cursor = await db.execute(
             "INSERT INTO diary (user_id, content, mood_score, tags, created_at) VALUES (?,?,?,?,?)",
@@ -217,7 +217,7 @@ async def get_recent_user_emotions(user_id: int, limit: int = 5) -> list[dict]:
 
 
 async def add_event(user_id: int, type_: str, title: str, content: str, scheduled_at: str) -> int:
-    now = datetime.utcnow().isoformat()
+    now = datetime.now().isoformat()
     async with aiosqlite.connect(DB_PATH) as db:
         cursor = await db.execute(
             "INSERT INTO events (user_id, type, title, content, scheduled_at, created_at) VALUES (?,?,?,?,?,?)",
