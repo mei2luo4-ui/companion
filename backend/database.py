@@ -146,7 +146,7 @@ async def get_memories(user_id: int) -> list[dict]:
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
         cursor = await db.execute(
-            "SELECT * FROM memories WHERE user_id=? ORDER BY importance DESC, created_at DESC LIMIT 10", (user_id,)
+            "SELECT * FROM memories WHERE user_id=? ORDER BY importance DESC, created_at DESC LIMIT 20", (user_id,)
         )
         rows = await cursor.fetchall()
         return [dict(r) for r in rows]

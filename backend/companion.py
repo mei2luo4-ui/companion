@@ -55,7 +55,7 @@ score表示该情绪的强度，0为最弱，10为最强。
 async def chat_stream(user_id: int, user_message: str):
     profile = await db.get_profile(user_id)
     memories = await db.get_memories(user_id)
-    history = await db.get_recent_messages(user_id, 20)
+    history = await db.get_recent_messages(user_id, 40)
 
     system_prompt = build_system_prompt(profile, memories)
 
@@ -123,22 +123,19 @@ async def chat_stream(user_id: int, user_message: str):
 
     yield ("emotion", emotion_data)
 
-    try:
-        clean_response = re.sub(r"\n*__EMOTION__:.*$", "", full_response, flags=re.DOTALL).strip()
-        await db.add_message(user_id, "user", user_message)
-        await db.add_message(
-            user_id,
-            "assistant",
-            clean_response,
-            emotion_label=emotion_data["label"],
-            emotion_score=emotion_data["score"],
-        )
+    clean_response = re.sub(r"\n*__EMOTION__:.*$", "", full_response, flags=re.DOTALL).strip()
+    await db.add_message(user_id, "user", user_message)
+    await db.add_message(
+        user_id,
+        "assistant",
+        clean_response,
+        emotion_label=emotion_data["label"],
+        emotion_score=emotion_data["score"],
+    )
 
-        count = await db.count_messages(user_id)
-        if count > 0 and count % 10 == 0:
-            await _summarize_memories(user_id)
-    except Exception:
-        pass
+    count = await db.count_messages(user_id)
+    if count > 0 and count % 5 == 0:
+        await _summarize_memories(user_id)
 
 
 async def _summarize_memories(user_id: int):
