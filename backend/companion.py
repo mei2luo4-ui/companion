@@ -1,7 +1,10 @@
 import json
+import logging
 import re
 import os
 from openai import AsyncOpenAI
+
+logger = logging.getLogger(__name__)
 from . import database as db
 
 client = AsyncOpenAI(
@@ -123,19 +126,22 @@ async def chat_stream(user_id: int, user_message: str):
 
     yield ("emotion", emotion_data)
 
-    clean_response = re.sub(r"\n*__EMOTION__:.*$", "", full_response, flags=re.DOTALL).strip()
-    await db.add_message(user_id, "user", user_message)
-    await db.add_message(
-        user_id,
-        "assistant",
-        clean_response,
-        emotion_label=emotion_data["label"],
-        emotion_score=emotion_data["score"],
-    )
+    try:
+        clean_response = re.sub(r"\n*__EMOTION__:.*$", "", full_response, flags=re.DOTALL).strip()
+        await db.add_message(user_id, "user", user_message)
+        await db.add_message(
+            user_id,
+            "assistant",
+            clean_response,
+            emotion_label=emotion_data["label"],
+            emotion_score=emotion_data["score"],
+        )
 
-    count = await db.count_messages(user_id)
-    if count > 0 and count % 5 == 0:
-        await _summarize_memories(user_id)
+        count = await db.count_messages(user_id)
+        if count > 0 and count % 5 == 0:
+            await _summarize_memories(user_id)
+    except Exception:
+        logger.exception("保存消息失败 user_id=%s", user_id)
 
 
 async def _summarize_memories(user_id: int):
