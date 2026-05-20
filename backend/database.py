@@ -252,6 +252,26 @@ async def has_event_today(user_id: int, type_: str) -> bool:
         return (await cursor.fetchone())[0] > 0
 
 
+async def get_seen_lore_chapters(user_id: int, character_name: str) -> set:
+    """返回该用户已推送过的某角色故事章节号集合"""
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute(
+            "SELECT content FROM events WHERE user_id=? AND type='lore' AND title LIKE ?",
+            (user_id, f"%{character_name}%"),
+        )
+        rows = await cursor.fetchall()
+    chapters = set()
+    import json as _json
+    for (content,) in rows:
+        try:
+            data = _json.loads(content)
+            if "chapter" in data:
+                chapters.add(data["chapter"])
+        except Exception:
+            pass
+    return chapters
+
+
 async def get_all_user_ids() -> list[int]:
     async with aiosqlite.connect(DB_PATH) as db:
         cursor = await db.execute("SELECT id FROM users")

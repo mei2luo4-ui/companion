@@ -9,8 +9,8 @@ import hmac
 from datetime import datetime, timedelta
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Depends
-from fastapi.responses import StreamingResponse
+from fastapi import FastAPI, HTTPException, Depends, UploadFile, File
+from fastapi.responses import StreamingResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
@@ -80,6 +80,10 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="情感陪伴体", lifespan=lifespan)
 
 FRONTEND_DIR = Path(__file__).parent.parent / "frontend"
+AVATARS_DIR = FRONTEND_DIR / "avatars"
+AVATARS_DIR.mkdir(exist_ok=True)
+
+BUILTIN_AVATARS = ["/avatars/cyber1.svg", "/avatars/cyber2.svg", "/avatars/cyber3.svg"]
 
 
 @app.post("/auth/register")
@@ -166,6 +170,37 @@ async def profile(user_id: int = Depends(get_current_user)):
 async def save_profile(req: ProfileRequest, user_id: int = Depends(get_current_user)):
     await update_profile(user_id, req.name, req.personality, req.speaking_style, req.avatar_emoji)
     return {"ok": True}
+
+
+@app.get("/avatar/list")
+async def list_avatars(user_id: int = Depends(get_current_user)):
+    uploaded = sorted(AVATARS_DIR.glob(f"u{user_id}_*"), key=lambda p: p.stat().st_mtime)
+    return {"uploaded": [f"/avatars/{p.name}" for p in uploaded]}
+
+
+@app.post("/avatar/upload")
+async def upload_avatar(file: UploadFile = File(...), user_id: int = Depends(get_current_user)):
+    if file.content_type not in ("image/jpeg", "image/png", "image/webp", "image/gif"):
+        raise HTTPException(status_code=400, detail="仅支持 jpg/png/webp/gif")
+    data = await file.read()
+    if len(data) > 2 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="图片不能超过 2MB")
+
+    # 统计用户已上传数量
+    existing = sorted(AVATARS_DIR.glob(f"u{user_id}_*"))
+    if len(existing) >= 3:
+        existing[0].unlink()  # 删除最旧的
+
+    ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else "jpg"
+    import time
+    fname = f"u{user_id}_{int(time.time())}.{ext}"
+    (AVATARS_DIR / fname).write_bytes(data)
+    return {"url": f"/avatars/{fname}"}
+
+
+@app.get("/")
+async def root():
+    return RedirectResponse(url="/login.html")
 
 
 app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="static")

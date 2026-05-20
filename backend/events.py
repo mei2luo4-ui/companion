@@ -13,6 +13,9 @@ EVENT_TYPES = {
     "emotion_care": {"hours": range(0, 24), "label": "情绪关怀"},
 }
 
+# lore 事件触发时间段（下午或晚上，避免打扰）
+LORE_HOURS = list(range(14, 22))
+
 
 async def check_and_generate_events():
     user_ids = await db.get_all_user_ids()
@@ -39,6 +42,11 @@ async def _check_for_user(user_id: int):
             if random.random() < 0.4:
                 await _create_event(user_id, event_type, profile, recent_emotions)
 
+    # lore 事件：每天最多一次，随机时段触发
+    if hour in LORE_HOURS and not await db.has_event_today(user_id, "lore"):
+        if random.random() < 0.3:
+            await _create_lore_event(user_id, profile)
+
 
 async def _create_event(user_id: int, event_type: str, profile: dict, recent_emotions: list[dict]):
     try:
@@ -46,7 +54,22 @@ async def _create_event(user_id: int, event_type: str, profile: dict, recent_emo
         scheduled_at = datetime.now().isoformat()
         await db.add_event(user_id, event_type, data["title"], data["content"], scheduled_at)
     except Exception:
-        pass  # 事件生成失败静默处理，不影响主流程
+        pass
+
+
+async def _create_lore_event(user_id: int, profile: dict):
+    try:
+        import json
+        seen = await db.get_seen_lore_chapters(user_id, profile["name"])
+        chapter = companion.get_next_lore_chapter(profile["name"], seen)
+        if chapter is None:
+            return  # 所有章节已推送完毕
+        scheduled_at = datetime.now().isoformat()
+        # content 存储 JSON，包含章节号，供去重查询使用
+        content_json = json.dumps({"chapter": chapter["chapter"], "text": chapter["content"]}, ensure_ascii=False)
+        await db.add_event(user_id, "lore", chapter["title"], content_json, scheduled_at)
+    except Exception:
+        pass
 
 
 async def event_scheduler_loop():

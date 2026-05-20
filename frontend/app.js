@@ -1,3 +1,5 @@
+const BUILTIN_AVATAR = '/avatars/1f42a266ff2e5e663cc3a41dbe2d827b.png';
+
 const EMOTION_COLORS = {
   '高兴': '#52c41a',
   '平静': '#40a9ff',
@@ -13,6 +15,7 @@ const TYPE_LABELS = {
   activity: '活动邀请',
   evening: '睡前陪伴',
   emotion_care: '情绪关怀',
+  lore: '她想告诉你',
 };
 
 const token = localStorage.getItem('token');
@@ -52,28 +55,34 @@ async function loadProfile() {
 function updateProfileUI() {
   const avatar = document.getElementById('topAvatar');
   const name = document.getElementById('topName');
-  if (avatar) avatar.textContent = profile.avatar_emoji || '🌸';
+  if (avatar) avatar.innerHTML = `<img src="${profile.avatar_emoji || BUILTIN_AVATAR}" alt="头像">`;
   if (name) name.textContent = profile.name || '小暖';
   const replyBtn = document.getElementById('eventReplyBtn');
   if (replyBtn) replyBtn.textContent = `回复${profile.name}`;
 }
 
 async function loadHistory() {
+  const container = document.getElementById('messages');
+  if (!container) return;
+
+  const cached = sessionStorage.getItem('chat_html');
+  if (cached) {
+    container.innerHTML = cached;
+    scrollToBottom();
+    return;
+  }
+
   try {
     const res = await authFetch('/history?limit=30');
     const { messages } = await res.json();
-    const container = document.getElementById('messages');
-    if (!container) return;
     container.innerHTML = '';
     for (const msg of messages) {
       appendMessage(msg.role, msg.content, false);
     }
     scrollToBottom();
-    if (messages.length === 0) {
-      showWelcome();
-    }
+    if (messages.length === 0) showWelcome();
+    sessionStorage.setItem('chat_html', container.innerHTML);
   } catch (e) {
-    console.error('加载历史失败', e);
     showWelcome();
   }
 }
@@ -94,7 +103,7 @@ function appendMessage(role, content, animate = true) {
 
   const avatarEl = document.createElement('div');
   avatarEl.className = 'msg-avatar';
-  avatarEl.textContent = isUser ? '◎' : (profile.avatar_emoji || '✦');
+  avatarEl.innerHTML = isUser ? '◎' : `<img src="${profile.avatar_emoji || BUILTIN_AVATAR}" alt="头像">`;
 
   const bubble = document.createElement('div');
   bubble.className = 'bubble';
@@ -116,7 +125,7 @@ function appendTypingIndicator() {
 
   const avatarEl = document.createElement('div');
   avatarEl.className = 'msg-avatar';
-  avatarEl.textContent = profile.avatar_emoji || '🌸';
+  avatarEl.innerHTML = `<img src="${profile.avatar_emoji || BUILTIN_AVATAR}" alt="头像">`;
 
   const bubble = document.createElement('div');
   bubble.className = 'bubble';
@@ -214,6 +223,7 @@ async function sendMessage() {
 
   isSending = false;
   document.getElementById('sendBtn').disabled = false;
+  sessionStorage.setItem('chat_html', document.getElementById('messages').innerHTML);
   input.focus();
 }
 
@@ -283,7 +293,11 @@ function showNextEvent() {
 
   badge.textContent = TYPE_LABELS[event.type] || '通知';
   title.textContent = event.title;
-  content.textContent = event.content;
+  let displayContent = event.content;
+  if (event.type === 'lore') {
+    try { displayContent = JSON.parse(event.content).text; } catch {}
+  }
+  content.textContent = displayContent;
   modal.classList.remove('hidden');
 }
 

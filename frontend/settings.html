@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>设置 — 情感陪伴体</title>
+  <title>设置</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -20,93 +20,137 @@
 
 <div class="page-container">
 
-  <!-- 预览卡 -->
-  <div class="settings-section" style="text-align:center; padding:28px 20px;">
-    <div style="font-size:52px; margin-bottom:10px;" id="previewAvatar">🌸</div>
-    <div style="font-size:20px; font-weight:600;" id="previewName">小暖</div>
-    <div style="font-size:13px; color:var(--text-muted); margin-top:4px;" id="previewDesc">温柔体贴 · 亲密随意</div>
+  <!-- 当前角色预览 -->
+  <div class="settings-section" style="text-align:center;padding:24px 20px;">
+    <img id="previewAvatar" src="" style="width:80px;height:80px;border-radius:50%;border:2px solid var(--primary);box-shadow:var(--glow-sm);object-fit:cover;margin-bottom:10px;">
+    <div style="font-size:20px;font-weight:600;" id="previewName"></div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;" id="previewDesc"></div>
   </div>
 
-  <!-- 名字 -->
+  <!-- 角色预设 -->
   <div class="settings-section">
-    <div class="settings-label">陪伴体名字</div>
-    <input class="settings-input" id="nameInput" type="text" placeholder="给她起个名字" maxlength="10" aria-label="陪伴体名字">
+    <div class="settings-label" style="margin-bottom:12px">选择角色</div>
+    <div class="avatar-grid" id="presetGrid"></div>
+    <button class="upload-btn" id="customBtn" style="margin-top:12px;width:100%;text-align:center;display:block">+ 自定义角色</button>
   </div>
 
-  <!-- 头像 -->
-  <div class="settings-section">
-    <div class="settings-label">头像</div>
-    <div class="emoji-grid" id="emojiGrid" role="group" aria-label="选择头像">
-      <button class="emoji-btn selected" data-emoji="🌸" aria-pressed="true">🌸</button>
-      <button class="emoji-btn" data-emoji="🌺" aria-pressed="false">🌺</button>
-      <button class="emoji-btn" data-emoji="🌼" aria-pressed="false">🌼</button>
-      <button class="emoji-btn" data-emoji="⭐" aria-pressed="false">⭐</button>
-      <button class="emoji-btn" data-emoji="🦋" aria-pressed="false">🦋</button>
-      <button class="emoji-btn" data-emoji="🐱" aria-pressed="false">🐱</button>
-      <button class="emoji-btn" data-emoji="🐻" aria-pressed="false">🐻</button>
-      <button class="emoji-btn" data-emoji="🌙" aria-pressed="false">🌙</button>
-      <button class="emoji-btn" data-emoji="☀️" aria-pressed="false">☀️</button>
-      <button class="emoji-btn" data-emoji="🍀" aria-pressed="false">🍀</button>
-    </div>
-  </div>
-
-  <!-- 性格 -->
-  <div class="settings-section">
-    <div class="settings-label">性格</div>
-    <div class="option-grid" id="personalityGrid" role="group" aria-label="选择性格">
-      <button class="option-btn selected" data-value="温柔体贴" aria-pressed="true">温柔体贴</button>
-      <button class="option-btn" data-value="活泼开朗" aria-pressed="false">活泼开朗</button>
-      <button class="option-btn" data-value="沉稳知性" aria-pressed="false">沉稳知性</button>
-      <button class="option-btn" data-value="俏皮搞怪" aria-pressed="false">俏皮搞怪</button>
-    </div>
-  </div>
-
-  <!-- 说话风格 -->
-  <div class="settings-section">
-    <div class="settings-label">说话风格</div>
-    <div class="option-grid" id="styleGrid" role="group" aria-label="选择说话风格">
-      <button class="option-btn selected" data-value="亲密随意" aria-pressed="true">亲密随意</button>
-      <button class="option-btn" data-value="正式" aria-pressed="false">正式得体</button>
-      <button class="option-btn" data-value="文艺诗意" aria-pressed="false">文艺诗意</button>
-    </div>
-  </div>
-
-  <button class="save-btn" id="saveBtn">保存设置</button>
   <button class="logout-btn" id="logoutBtn">退出登录</button>
 
 </div>
 
-<nav class="bottomnav" aria-label="主导航">
-  <a href="index.html" class="nav-item">
-    <span>◈</span><span>聊天</span>
-  </a>
-  <a href="diary.html" class="nav-item">
-    <span>◇</span><span>日记</span>
-  </a>
-  <a href="settings.html" class="nav-item active" aria-current="page">
-    <span>◉</span><span>设置</span>
-  </a>
-</nav>
+<!-- 自定义角色面板 -->
+<div class="modal-overlay hidden" id="customModal">
+  <div class="event-card" style="max-width:420px;width:100%">
+    <div style="font-size:16px;font-weight:600;margin-bottom:16px;color:var(--text)">自定义角色</div>
+
+    <!-- 头像上传 -->
+    <div class="settings-label">头像</div>
+    <div style="display:flex;align-items:center;gap:12px;margin:8px 0 16px">
+      <img id="customAvatarPreview" src="" style="width:56px;height:56px;border-radius:50%;border:1.5px solid var(--border);object-fit:cover;">
+      <label class="upload-btn" style="flex:1;text-align:center">
+        上传图片（最多3张）
+        <input type="file" id="customAvatarUpload" accept="image/*" style="display:none">
+      </label>
+    </div>
+
+    <!-- 名字 -->
+    <div class="settings-label">名字</div>
+    <input class="settings-input" id="customName" type="text" placeholder="给她起个名字" maxlength="10" style="margin:8px 0 16px">
+
+    <!-- 性格 -->
+    <div class="settings-label">性格</div>
+    <div class="option-grid" id="customPersonalityGrid" style="grid-template-columns:1fr 1fr;margin:8px 0 16px">
+      <button class="option-btn" data-value="温柔体贴">温柔体贴</button>
+      <button class="option-btn" data-value="活泼开朗">活泼开朗</button>
+      <button class="option-btn" data-value="沉稳知性">沉稳知性</button>
+      <button class="option-btn" data-value="俏皮搞怪">俏皮搞怪</button>
+      <button class="option-btn" data-value="冷艳神秘">冷艳神秘</button>
+      <button class="option-btn" data-value="御姐霸气">御姐霸气</button>
+      <button class="option-btn" data-value="温婉古典">温婉古典</button>
+      <button class="option-btn" data-value="元气少女">元气少女</button>
+    </div>
+
+    <!-- 说话风格 -->
+    <div class="settings-label">说话风格</div>
+    <div class="option-grid" id="customStyleGrid" style="grid-template-columns:1fr 1fr;margin:8px 0 20px">
+      <button class="option-btn" data-value="亲密随意">亲密随意</button>
+      <button class="option-btn" data-value="正式得体">正式得体</button>
+      <button class="option-btn" data-value="文艺诗意">文艺诗意</button>
+      <button class="option-btn" data-value="简洁干练">简洁干练</button>
+      <button class="option-btn" data-value="温柔低语">温柔低语</button>
+      <button class="option-btn" data-value="古风雅韵">古风雅韵</button>
+      <button class="option-btn" data-value="活泼跳脱">活泼跳脱</button>
+      <button class="option-btn" data-value="深沉内敛">深沉内敛</button>
+    </div>
+
+    <div class="event-actions">
+      <button class="btn-primary" id="customSaveBtn">保存并应用</button>
+      <button class="btn-ghost" id="customCancelBtn">取消</button>
+    </div>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
+
+<nav class="bottomnav" aria-label="主导航">
+  <a href="index.html" class="nav-item"><span>◈</span><span>聊天</span></a>
+  <a href="diary.html" class="nav-item"><span>◇</span><span>日记</span></a>
+  <a href="settings.html" class="nav-item active" aria-current="page"><span>◉</span><span>设置</span></a>
+</nav>
 
 <script>
 const token = localStorage.getItem('token');
 if (!token) location.href = 'login.html';
 
 function authFetch(url, options = {}) {
-  return fetch(url, {
-    ...options,
-    headers: { ...(options.headers || {}), 'Authorization': `Bearer ${token}` },
-  }).then(res => {
+  const headers = { 'Authorization': `Bearer ${token}`, ...(options.headers || {}) };
+  if (options.body && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
+  return fetch(url, { ...options, headers }).then(res => {
     if (res.status === 401) { localStorage.removeItem('token'); location.href = 'login.html'; }
     return res;
   });
 }
 
-let selectedEmoji = '🌸';
-let selectedPersonality = '温柔体贴';
-let selectedStyle = '亲密随意';
+const BUILTIN = [
+  '/avatars/1f42a266ff2e5e663cc3a41dbe2d827b.png',
+  '/avatars/465f5350609f6f399c6e8aa6f92e30d6.png',
+  '/avatars/53dd9eb3edbc68ea22339dc917018d6d.png',
+  '/avatars/70f0c7948588749b4af31af065703455.png',
+  '/avatars/7b9230954d804b3e65e8efa6cb3cbe3e.png',
+  '/avatars/c3494530cc2acdd0dc350c05505274d7.png',
+  '/avatars/cd52565c0a9aa160e0b10fa18e0dd271.png',
+  '/avatars/e11dd9428d262a6116bd9fb4e5ff3e21.png',
+];
+
+const PRESETS = [
+  { name: '晓柔', avatar: BUILTIN[0], personality: '温柔体贴', style: '温柔低语' },
+  { name: '星澜', avatar: BUILTIN[1], personality: '冷艳神秘', style: '深沉内敛' },
+  { name: '糖糖', avatar: BUILTIN[2], personality: '元气少女', style: '活泼跳脱' },
+  { name: '沐雪', avatar: BUILTIN[3], personality: '温婉古典', style: '古风雅韵' },
+  { name: '凌霄', avatar: BUILTIN[4], personality: '御姐霸气', style: '简洁干练' },
+  { name: '知微', avatar: BUILTIN[5], personality: '沉稳知性', style: '正式得体' },
+  { name: '阿橘', avatar: BUILTIN[6], personality: '俏皮搞怪', style: '亲密随意' },
+  { name: '诗韵', avatar: BUILTIN[7], personality: '活泼开朗', style: '文艺诗意' },
+];
+
+const STYLE_COMPAT = { '正式': '正式得体' };
+
+// 自定义角色持久化（localStorage）
+function loadCustomRoles() {
+  try { return JSON.parse(localStorage.getItem('custom_roles') || '[]'); } catch { return []; }
+}
+function saveCustomRoles(roles) {
+  localStorage.setItem('custom_roles', JSON.stringify(roles));
+}
+let customRoles = loadCustomRoles();
+
+// 当前应用的配置
+let current = { name: '', avatar: BUILTIN[0], personality: '温柔体贴', style: '亲密随意' };
+// 自定义面板状态（editingCustomIndex: 正在编辑的自定义角色索引，-1=新建）
+let customAvatar = BUILTIN[0];
+let customPersonality = '温柔体贴';
+let customStyle = '亲密随意';
+let editingCustomIndex = -1;
 
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -115,129 +159,195 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-function updatePreview() {
-  document.getElementById('previewAvatar').textContent = selectedEmoji;
-  document.getElementById('previewName').textContent = document.getElementById('nameInput').value || '小暖';
-  document.getElementById('previewDesc').textContent = `${selectedPersonality} · ${selectedStyle}`;
+function updateMainPreview() {
+  document.getElementById('previewAvatar').src = current.avatar;
+  document.getElementById('previewName').textContent = current.name;
+  document.getElementById('previewDesc').textContent = `${current.personality} · ${current.style}`;
 }
 
-// 加载当前配置
+function isSelected(p) {
+  return current.name === p.name && current.avatar === p.avatar;
+}
+
+function renderPresetGrid() {
+  const grid = document.getElementById('presetGrid');
+  const presetHtml = PRESETS.map((p, i) => `
+    <button class="avatar-img-btn preset-btn${isSelected(p) ? ' selected' : ''}"
+      data-type="preset" data-index="${i}" title="${p.name}" style="position:relative;overflow:hidden">
+      <img src="${p.avatar}" alt="${p.name}">
+      <span style="position:absolute;bottom:0;left:0;right:0;font-size:9px;text-align:center;
+        background:rgba(0,0,0,0.65);color:#fff;padding:2px 0">${p.name}</span>
+    </button>`).join('');
+
+  const customHtml = customRoles.map((p, i) => `
+    <div style="position:relative;display:inline-block">
+      <button class="avatar-img-btn preset-btn${isSelected(p) ? ' selected' : ''}"
+        data-type="custom" data-index="${i}" title="${p.name}" style="position:relative;overflow:hidden">
+        <img src="${p.avatar}" alt="${p.name}">
+        <span style="position:absolute;bottom:0;left:0;right:0;font-size:9px;text-align:center;
+          background:rgba(0,0,0,0.65);color:#fff;padding:2px 0">${p.name}</span>
+      </button>
+      <button data-type="edit-custom" data-index="${i}" title="编辑"
+        style="position:absolute;top:0;right:0;width:18px;height:18px;border-radius:50%;
+          background:var(--primary);border:none;color:#fff;font-size:10px;cursor:pointer;
+          display:flex;align-items:center;justify-content:center;line-height:1">✎</button>
+      <button data-type="del-custom" data-index="${i}" title="删除"
+        style="position:absolute;top:0;left:0;width:18px;height:18px;border-radius:50%;
+          background:#ff4d4f;border:none;color:#fff;font-size:10px;cursor:pointer;
+          display:flex;align-items:center;justify-content:center;line-height:1">✕</button>
+    </div>`).join('');
+
+  grid.innerHTML = presetHtml + customHtml;
+}
+
+function openCustomModal(p, customIdx) {
+  editingCustomIndex = customIdx;
+  customAvatar = p.avatar;
+  customPersonality = p.personality;
+  customStyle = p.style;
+  document.getElementById('customName').value = p.name;
+  document.getElementById('customAvatarPreview').src = customAvatar;
+  syncCustomOptions();
+  document.getElementById('customModal').classList.remove('hidden');
+}
+
+document.getElementById('presetGrid').addEventListener('click', async e => {
+  const el = e.target.closest('[data-type]');
+  if (!el) return;
+  const idx = +el.dataset.index;
+
+  if (el.dataset.type === 'preset') {
+    const p = PRESETS[idx];
+    current = { name: p.name, avatar: p.avatar, personality: p.personality, style: p.style };
+    renderPresetGrid(); updateMainPreview();
+    await saveProfile();
+    showToast(`已切换为 ${p.name}`);
+  } else if (el.dataset.type === 'custom') {
+    const p = customRoles[idx];
+    current = { name: p.name, avatar: p.avatar, personality: p.personality, style: p.style };
+    renderPresetGrid(); updateMainPreview();
+    await saveProfile();
+    showToast(`已切换为 ${p.name}`);
+  } else if (el.dataset.type === 'edit-custom') {
+    openCustomModal(customRoles[idx], idx);
+  } else if (el.dataset.type === 'del-custom') {
+    customRoles.splice(idx, 1);
+    saveCustomRoles(customRoles);
+    renderPresetGrid();
+    showToast('已删除');
+  }
+});
+
+async function saveProfile() {
+  await authFetch('/profile', {
+    method: 'POST',
+    body: JSON.stringify({ name: current.name, personality: current.personality, speaking_style: current.style, avatar_emoji: current.avatar }),
+  });
+  sessionStorage.removeItem('chat_html');
+}
+
+// ---- 自定义面板 ----
+document.getElementById('customBtn').addEventListener('click', () => {
+  openCustomModal({ name: '', avatar: BUILTIN[0], personality: '温柔体贴', style: '亲密随意' }, -1);
+});
+
+document.getElementById('customCancelBtn').addEventListener('click', () => {
+  document.getElementById('customModal').classList.add('hidden');
+});
+
+document.getElementById('customModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('customModal'))
+    document.getElementById('customModal').classList.add('hidden');
+});
+
+document.getElementById('customAvatarUpload').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const form = new FormData();
+  form.append('file', file);
+  try {
+    const res = await authFetch('/avatar/upload', { method: 'POST', body: form });
+    if (!res.ok) { showToast((await res.json()).detail || '上传失败'); return; }
+    const { url } = await res.json();
+    customAvatar = url;
+    document.getElementById('customAvatarPreview').src = url;
+    showToast('头像已上传');
+  } catch { showToast('上传失败'); }
+  e.target.value = '';
+});
+
+document.getElementById('customPersonalityGrid').addEventListener('click', e => {
+  const btn = e.target.closest('.option-btn');
+  if (!btn) return;
+  customPersonality = btn.dataset.value;
+  syncCustomOptions();
+});
+
+document.getElementById('customStyleGrid').addEventListener('click', e => {
+  const btn = e.target.closest('.option-btn');
+  if (!btn) return;
+  customStyle = btn.dataset.value;
+  syncCustomOptions();
+});
+
+function syncCustomOptions() {
+  document.querySelectorAll('#customPersonalityGrid .option-btn').forEach(b => {
+    b.classList.toggle('selected', b.dataset.value === customPersonality);
+  });
+  document.querySelectorAll('#customStyleGrid .option-btn').forEach(b => {
+    b.classList.toggle('selected', b.dataset.value === customStyle);
+  });
+}
+
+document.getElementById('customSaveBtn').addEventListener('click', async () => {
+  const name = document.getElementById('customName').value.trim();
+  if (!name) { showToast('请填写名字'); return; }
+  if (!customPersonality) { showToast('请选择性格'); return; }
+  if (!customStyle) { showToast('请选择说话风格'); return; }
+
+  const btn = document.getElementById('customSaveBtn');
+  btn.disabled = true; btn.textContent = '保存中...';
+  try {
+    const role = { name, avatar: customAvatar, personality: customPersonality, style: customStyle };
+    if (editingCustomIndex >= 0) {
+      customRoles[editingCustomIndex] = role;
+    } else {
+      customRoles.push(role);
+    }
+    saveCustomRoles(customRoles);
+    current = role;
+    await saveProfile();
+    renderPresetGrid();
+    updateMainPreview();
+    document.getElementById('customModal').classList.add('hidden');
+    showToast('自定义角色已应用 ✓');
+  } catch { showToast('保存失败，请重试'); }
+  btn.disabled = false; btn.textContent = '保存并应用';
+});
+
+// ---- 初始化 ----
 async function loadProfile() {
   try {
     const res = await authFetch('/profile');
     const p = await res.json();
-    document.getElementById('nameInput').value = p.name || '';
-    selectedEmoji = p.avatar_emoji || '🌸';
-    selectedPersonality = p.personality || '温柔体贴';
-    selectedStyle = p.speaking_style || '亲密随意';
-    syncUI();
-    updatePreview();
-  } catch (e) {
-    console.error('加载配置失败', e);
-  }
+    current = {
+      name: p.name || PRESETS[0].name,
+      avatar: p.avatar_emoji || BUILTIN[0],
+      personality: p.personality || '温柔体贴',
+      style: STYLE_COMPAT[p.speaking_style] || p.speaking_style || '亲密随意',
+    };
+    renderPresetGrid();
+    updateMainPreview();
+  } catch (e) { console.error(e); }
 }
-
-function syncUI() {
-  // 头像
-  document.querySelectorAll('#emojiGrid .emoji-btn').forEach(btn => {
-    const active = btn.dataset.emoji === selectedEmoji;
-    btn.classList.toggle('selected', active);
-    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
-  });
-  // 性格
-  document.querySelectorAll('#personalityGrid .option-btn').forEach(btn => {
-    const active = btn.dataset.value === selectedPersonality;
-    btn.classList.toggle('selected', active);
-    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
-  });
-  // 风格
-  document.querySelectorAll('#styleGrid .option-btn').forEach(btn => {
-    const active = btn.dataset.value === selectedStyle;
-    btn.classList.toggle('selected', active);
-    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
-  });
-}
-
-// 头像选择
-document.getElementById('emojiGrid').addEventListener('click', (e) => {
-  const btn = e.target.closest('.emoji-btn');
-  if (!btn) return;
-  selectedEmoji = btn.dataset.emoji;
-  document.querySelectorAll('#emojiGrid .emoji-btn').forEach(b => {
-    b.classList.remove('selected');
-    b.setAttribute('aria-pressed', 'false');
-  });
-  btn.classList.add('selected');
-  btn.setAttribute('aria-pressed', 'true');
-  updatePreview();
-});
-
-// 性格选择
-document.getElementById('personalityGrid').addEventListener('click', (e) => {
-  const btn = e.target.closest('.option-btn');
-  if (!btn) return;
-  selectedPersonality = btn.dataset.value;
-  document.querySelectorAll('#personalityGrid .option-btn').forEach(b => {
-    b.classList.remove('selected');
-    b.setAttribute('aria-pressed', 'false');
-  });
-  btn.classList.add('selected');
-  btn.setAttribute('aria-pressed', 'true');
-  updatePreview();
-});
-
-// 风格选择
-document.getElementById('styleGrid').addEventListener('click', (e) => {
-  const btn = e.target.closest('.option-btn');
-  if (!btn) return;
-  selectedStyle = btn.dataset.value;
-  document.querySelectorAll('#styleGrid .option-btn').forEach(b => {
-    b.classList.remove('selected');
-    b.setAttribute('aria-pressed', 'false');
-  });
-  btn.classList.add('selected');
-  btn.setAttribute('aria-pressed', 'true');
-  updatePreview();
-});
-
-// 名字输入实时预览
-document.getElementById('nameInput').addEventListener('input', updatePreview);
-
-// 保存
-document.getElementById('saveBtn').addEventListener('click', async () => {
-  const name = document.getElementById('nameInput').value.trim();
-  if (!name) { showToast('请填写陪伴体名字'); return; }
-
-  const btn = document.getElementById('saveBtn');
-  btn.disabled = true;
-  btn.textContent = '保存中...';
-
-  try {
-    await authFetch('/profile', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name,
-        personality: selectedPersonality,
-        speaking_style: selectedStyle,
-        avatar_emoji: selectedEmoji,
-      }),
-    });
-    showToast('设置已保存 ✓');
-  } catch (e) {
-    showToast('保存失败，请重试');
-  }
-
-  btn.disabled = false;
-  btn.textContent = '保存设置';
-});
-
-loadProfile();
 
 document.getElementById('logoutBtn').addEventListener('click', () => {
   localStorage.removeItem('token');
+  sessionStorage.removeItem('chat_html');
   location.href = 'login.html';
 });
+
+loadProfile();
 </script>
 </body>
 </html>
