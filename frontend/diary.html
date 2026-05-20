@@ -11,7 +11,7 @@
 
 <div class="topbar">
   <div class="companion-info">
-    <div style="font-size:22px">📔</div>
+    <div style="font-size:22px;color:var(--primary)">◇</div>
     <div>
       <div class="companion-name">我的日记</div>
       <div class="emotion-status"><span>心情追踪</span></div>
@@ -60,13 +60,13 @@
 
 <nav class="bottomnav" aria-label="主导航">
   <a href="index.html" class="nav-item">
-    <span>💬</span><span>聊天</span>
+    <span>◈</span><span>聊天</span>
   </a>
   <a href="diary.html" class="nav-item active" aria-current="page">
-    <span>📔</span><span>日记</span>
+    <span>◇</span><span>日记</span>
   </a>
   <a href="settings.html" class="nav-item">
-    <span>⚙️</span><span>设置</span>
+    <span>◉</span><span>设置</span>
   </a>
 </nav>
 
@@ -191,10 +191,10 @@ async function loadMoodChart() {
       datasets: [{
         label: '心情指数',
         data: scores,
-        borderColor: '#ff8fa3',
-        backgroundColor: 'rgba(255,143,163,0.1)',
-        borderWidth: 2.5,
-        pointBackgroundColor: '#ff8fa3',
+        borderColor: '#ff6b9d',
+        backgroundColor: 'rgba(255,107,157,0.08)',
+        borderWidth: 2,
+        pointBackgroundColor: '#ff6b9d',
         pointRadius: 4,
         tension: 0.4,
         fill: true,
@@ -206,10 +206,10 @@ async function loadMoodChart() {
       scales: {
         y: {
           min: 0, max: 10,
-          ticks: { stepSize: 2, color: '#9e7c84' },
-          grid: { color: '#f5d0d8' },
+          ticks: { stepSize: 2, color: '#8a7a9a' },
+          grid: { color: 'rgba(255,107,157,0.1)' },
         },
-        x: { ticks: { color: '#9e7c84' }, grid: { display: false } },
+        x: { ticks: { color: '#8a7a9a' }, grid: { display: false } },
       },
     },
   });

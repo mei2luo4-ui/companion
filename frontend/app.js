@@ -19,10 +19,9 @@ const token = localStorage.getItem('token');
 if (!token) location.href = 'login.html';
 
 function authFetch(url, options = {}) {
-  return fetch(url, {
-    ...options,
-    headers: { ...(options.headers || {}), 'Authorization': `Bearer ${token}` },
-  }).then(res => {
+  const headers = { 'Authorization': `Bearer ${token}`, ...(options.headers || {}) };
+  if (options.body && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
+  return fetch(url, { ...options, headers }).then(res => {
     if (res.status === 401) { localStorage.removeItem('token'); location.href = 'login.html'; }
     return res;
   });
@@ -95,7 +94,7 @@ function appendMessage(role, content, animate = true) {
 
   const avatarEl = document.createElement('div');
   avatarEl.className = 'msg-avatar';
-  avatarEl.textContent = isUser ? '🙂' : (profile.avatar_emoji || '🌸');
+  avatarEl.textContent = isUser ? '◎' : (profile.avatar_emoji || '✦');
 
   const bubble = document.createElement('div');
   bubble.className = 'bubble';
