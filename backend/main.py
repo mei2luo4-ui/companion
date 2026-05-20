@@ -1,6 +1,9 @@
 import asyncio
 import json
+import logging
 import os
+
+logger = logging.getLogger(__name__)
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -118,8 +121,10 @@ async def chat(req: ChatRequest, user_id: int = Depends(get_current_user)):
                 else:
                     payload = json.dumps({"type": "emotion", "data": data}, ensure_ascii=False)
                 yield f"data: {payload}\n\n"
-        except Exception:
-            pass
+        except Exception as e:
+            logger.exception("chat_stream error user_id=%s", user_id)
+            payload = json.dumps({"type": "text", "content": "连接出了点问题，稍后再试试？"}, ensure_ascii=False)
+            yield f"data: {payload}\n\n"
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")
