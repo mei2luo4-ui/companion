@@ -7,10 +7,17 @@ from openai import AsyncOpenAI
 logger = logging.getLogger(__name__)
 from . import database as db
 
-client = AsyncOpenAI(
-    api_key=os.getenv("API_KEY"),
-    base_url=os.getenv("API_BASE_URL", "https://api.xxx.top/v1"),
-)
+_client = None
+
+def get_client() -> AsyncOpenAI:
+    global _client
+    if _client is None:
+        _client = AsyncOpenAI(
+            api_key=os.getenv("API_KEY"),
+            base_url=os.getenv("API_BASE_URL", "https://api.xxx.top/v1"),
+        )
+    return _client
+
 MODEL = os.getenv("API_MODEL", "claude-2")
 
 PERSONALITY_MAP = {
@@ -271,7 +278,7 @@ async def chat_stream(user_id: int, user_message: str):
     full_response = ""
     buffer = ""
 
-    stream = await client.chat.completions.create(
+    stream = await get_client().chat.completions.create(
         model=MODEL,
         messages=messages,
         max_tokens=1024,
@@ -354,7 +361,7 @@ async def _summarize_memories(user_id: int):
         for m in history
     )
 
-    response = await client.chat.completions.create(
+    response = await get_client().chat.completions.create(
         model=MODEL,
         max_tokens=512,
         messages=[
@@ -394,7 +401,7 @@ async def generate_event_content(event_type: str, profile: dict, recent_emotions
     prompt_text = type_prompts.get(event_type, "生成一条关心用户的话")
     personality_desc = PERSONALITY_MAP.get(profile["personality"], profile["personality"])
 
-    response = await client.chat.completions.create(
+    response = await get_client().chat.completions.create(
         model=MODEL,
         max_tokens=200,
         messages=[
