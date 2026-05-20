@@ -1,5 +1,10 @@
 const BUILTIN_AVATAR = '/avatars/1f42a266ff2e5e663cc3a41dbe2d827b.png';
 
+function renderAvatar(val) {
+  const src = val && val.startsWith('/') ? val : BUILTIN_AVATAR;
+  return `<img src="${src}" alt="头像">`;
+}
+
 const EMOTION_COLORS = {
   '高兴': '#52c41a',
   '平静': '#40a9ff',
@@ -55,7 +60,7 @@ async function loadProfile() {
 function updateProfileUI() {
   const avatar = document.getElementById('topAvatar');
   const name = document.getElementById('topName');
-  if (avatar) avatar.innerHTML = `<img src="${profile.avatar_emoji || BUILTIN_AVATAR}" alt="头像">`;
+  if (avatar) avatar.innerHTML = renderAvatar(profile.avatar_emoji);
   if (name) name.textContent = profile.name || '小暖';
   const replyBtn = document.getElementById('eventReplyBtn');
   if (replyBtn) replyBtn.textContent = `回复${profile.name}`;
@@ -103,7 +108,7 @@ function appendMessage(role, content, animate = true) {
 
   const avatarEl = document.createElement('div');
   avatarEl.className = 'msg-avatar';
-  avatarEl.innerHTML = isUser ? '◎' : `<img src="${profile.avatar_emoji || BUILTIN_AVATAR}" alt="头像">`;
+  avatarEl.innerHTML = isUser ? '◎' : renderAvatar(profile.avatar_emoji);
 
   const bubble = document.createElement('div');
   bubble.className = 'bubble';
@@ -125,7 +130,7 @@ function appendTypingIndicator() {
 
   const avatarEl = document.createElement('div');
   avatarEl.className = 'msg-avatar';
-  avatarEl.innerHTML = `<img src="${profile.avatar_emoji || BUILTIN_AVATAR}" alt="头像">`;
+  avatarEl.innerHTML = renderAvatar(profile.avatar_emoji);
 
   const bubble = document.createElement('div');
   bubble.className = 'bubble';
