@@ -14,6 +14,7 @@ class LoginRequest(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str
+    display_message: Optional[str] = None
 
 
 class DiaryRequest(BaseModel):

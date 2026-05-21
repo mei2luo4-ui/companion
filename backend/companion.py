@@ -484,7 +484,7 @@ score表示该情绪的强度，0为最弱，10为最强。
 分析的是用户消息中表达的情绪，不是你自己的情绪。"""
 
 
-async def chat_stream(user_id: int, user_message: str):
+async def chat_stream(user_id: int, user_message: str, display_message: str | None = None):
     profile = await db.get_profile(user_id)
     character_name = profile["name"]
     memories = await db.get_memories(user_id)
@@ -560,7 +560,9 @@ async def chat_stream(user_id: int, user_message: str):
 
     try:
         clean_response = re.sub(r"\n*__EMOTION__:.*$", "", full_response, flags=re.DOTALL).strip()
-        await db.add_message(user_id, "user", user_message, character_name=character_name)
+        stored = display_message if display_message is not None else user_message
+        if stored:
+            await db.add_message(user_id, "user", stored, character_name=character_name)
         await db.add_message(
             user_id,
             "assistant",

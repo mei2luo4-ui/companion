@@ -51,7 +51,7 @@ async function init() {
       const { name, content } = JSON.parse(reply);
       isSending = true;
       document.getElementById('sendBtn').disabled = true;
-      await streamBotReply(`（用户刚刚看了你发的一条动态："${content}"，请自然地主动和用户聊起这条动态，不要提及"用户"这个词）`);
+      await streamBotReply(`（用户刚刚看了你发的一条动态："${content}"，请自然地主动和用户聊起这条动态，不要提及"用户"这个词）`, '');
       isSending = false;
       document.getElementById('sendBtn').disabled = false;
     } catch {}
@@ -116,7 +116,7 @@ function showWelcome() {
   const hint = msgs[Math.floor(Math.random() * msgs.length)];
   isSending = true;
   document.getElementById('sendBtn').disabled = true;
-  streamBotReply(`（请以这句话的风格和内容主动开口，直接说这句话或非常接近的表达，不要解释，不要加前缀："${hint}"）`)
+  streamBotReply(`（请以这句话的风格和内容主动开口，直接说这句话或非常接近的表达，不要解释，不要加前缀："${hint}"）`, '')
     .then(() => {
       isSending = false;
       document.getElementById('sendBtn').disabled = false;
@@ -179,15 +179,17 @@ function scrollToBottom() {
 }
 
 // ---- 发送消息 ----
-async function streamBotReply(message) {
+async function streamBotReply(message, displayMessage = undefined) {
   const typingEl = appendTypingIndicator();
   let botBubble = null;
   let botText = '';
   try {
+    const body = { message };
+    if (displayMessage !== undefined) body.display_message = displayMessage;
     const res = await authFetch('/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message }),
+      body: JSON.stringify(body),
     });
     const reader = res.body.getReader();
     const decoder = new TextDecoder();

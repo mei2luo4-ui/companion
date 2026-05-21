@@ -121,7 +121,7 @@ async def chat(req: ChatRequest, user_id: int = Depends(get_current_user)):
 
     async def generate():
         try:
-            async for kind, data in chat_stream(user_id, req.message):
+            async for kind, data in chat_stream(user_id, req.message, req.display_message):
                 if kind == "text":
                     payload = json.dumps({"type": "text", "content": data}, ensure_ascii=False)
                 else:
