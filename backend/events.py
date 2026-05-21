@@ -28,7 +28,7 @@ async def _check_for_user(user_id: int):
     last_time = await db.get_last_user_message_time(user_id)
     if last_time:
         inactive_seconds = (datetime.now() - datetime.fromisoformat(last_time)).total_seconds()
-        if inactive_seconds > 1800:
+        if inactive_seconds > 300:
             return
 
     now = datetime.now()
@@ -128,5 +128,5 @@ async def event_scheduler_loop():
             await check_and_generate_events()
         except Exception:
             pass
-        # 每 3~5 分钟检查一次
-        await asyncio.sleep(random.randint(180, 300))
+        # 每 2~4 分钟检查一次
+        await asyncio.sleep(random.randint(120, 240))
