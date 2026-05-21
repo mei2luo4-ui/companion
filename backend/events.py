@@ -46,8 +46,8 @@ async def _check_for_user(user_id: int):
         if random.random() < 0.3:
             await _create_lore_event(user_id, profile)
 
-    # 高频动态：每次轮询随机选一个内置角色发动态（不受每日限制）
-    if random.random() < 0.7:
+    # 动态：每次轮询有30%概率生成一条
+    if random.random() < 0.3:
         random_profile = random.choice(companion.ALL_CHARACTER_PROFILES)
         await _create_moment_post(user_id, random_profile, recent_emotions)
 
@@ -121,5 +121,5 @@ async def event_scheduler_loop():
             await check_and_generate_events()
         except Exception:
             pass
-        # 每 30~60 秒检查一次
-        await asyncio.sleep(random.randint(30, 60))
+        # 每 3~8 分钟检查一次
+        await asyncio.sleep(random.randint(180, 480))
