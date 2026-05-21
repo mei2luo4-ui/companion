@@ -244,7 +244,6 @@ async function saveProfile() {
     body: JSON.stringify({ name: current.name, personality: current.personality, speaking_style: current.style, avatar_emoji: current.avatar }),
   });
   await authFetch('/history', { method: 'DELETE' });
-  sessionStorage.removeItem('chat_html');
 }
 
 // ---- 自定义面板 ----

@@ -70,13 +70,6 @@ async function loadHistory() {
   const container = document.getElementById('messages');
   if (!container) return;
 
-  const cached = sessionStorage.getItem('chat_html');
-  if (cached) {
-    container.innerHTML = cached;
-    scrollToBottom();
-    return;
-  }
-
   try {
     const res = await authFetch('/history?limit=30');
     const { messages } = await res.json();
@@ -86,7 +79,6 @@ async function loadHistory() {
     }
     scrollToBottom();
     if (messages.length === 0) showWelcome();
-    sessionStorage.setItem('chat_html', container.innerHTML);
   } catch (e) {
     showWelcome();
   }
