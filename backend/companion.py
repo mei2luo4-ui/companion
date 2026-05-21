@@ -286,6 +286,8 @@ async def chat_stream(user_id: int, user_message: str):
     )
 
     async for chunk in stream:
+        if not chunk.choices:
+            continue
         delta = chunk.choices[0].delta.content
         if delta is None:
             continue
