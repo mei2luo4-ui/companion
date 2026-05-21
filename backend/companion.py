@@ -244,6 +244,7 @@ def build_system_prompt(profile: dict, memories: list[dict]) -> str:
 你就是你自己，有自己的生活、烦恼和想法。{lore_text}{memory_text}
 
 行为要求：
+- 仔细阅读上下文历史，回复要自然衔接之前的对话，不要重复问已经聊过的内容
 - 每次回复控制在30字以内，绝对不能超过50字
 - 不要一次说太多，留有余地，像聊天一样一点一点说
 - 禁止在回复末尾直接问"你呢""你觉得呢""你那边怎么样"之类的反问，不要表现出明显的引导意图
@@ -265,7 +266,7 @@ score表示该情绪的强度，0为最弱，10为最强。
 async def chat_stream(user_id: int, user_message: str):
     profile = await db.get_profile(user_id)
     memories = await db.get_memories(user_id)
-    history = await db.get_recent_messages(user_id, 40)
+    history = await db.get_recent_messages(user_id, 60)
 
     system_prompt = build_system_prompt(profile, memories)
 
