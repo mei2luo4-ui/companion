@@ -35,7 +35,7 @@ function authFetch(url, options = {}) {
   });
 }
 
-let profile = { name: '小暖', avatar_emoji: '🌸', personality: '温柔体贴', speaking_style: '亲密随意' };
+let profile = { name: '晓柔', avatar_emoji: '/avatars/1f42a266ff2e5e663cc3a41dbe2d827b.png', personality: '温柔体贴', speaking_style: '温柔低语' };
 let pendingEvents = [];
 let currentEventId = null;
 let isSending = false;
@@ -72,8 +72,8 @@ function updateProfileUI() {
   const avatar = document.getElementById('topAvatar');
   const name = document.getElementById('topName');
   if (avatar) avatar.innerHTML = renderAvatar(profile.avatar_emoji);
-  if (name) name.textContent = profile.name || '小暖';
-  document.title = `${profile.name || '小暖'} · 新霓虹`;
+  if (name) name.textContent = profile.name;
+  document.title = `${profile.name} · 新霓虹`;
   const replyBtn = document.getElementById('eventReplyBtn');
   if (replyBtn) replyBtn.textContent = `回复${profile.name}`;
 }

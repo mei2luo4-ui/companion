@@ -15,10 +15,10 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS profile (
     id INTEGER PRIMARY KEY,
     user_id INTEGER NOT NULL,
-    name TEXT NOT NULL DEFAULT '小暖',
+    name TEXT NOT NULL DEFAULT '晓柔',
     personality TEXT NOT NULL DEFAULT '温柔体贴',
-    speaking_style TEXT NOT NULL DEFAULT '亲密随意',
-    avatar_emoji TEXT NOT NULL DEFAULT '🌸',
+    speaking_style TEXT NOT NULL DEFAULT '温柔低语',
+    avatar_emoji TEXT NOT NULL DEFAULT '/avatars/1f42a266ff2e5e663cc3a41dbe2d827b.png',
     updated_at TEXT NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
@@ -110,7 +110,7 @@ async def create_user(username: str, password_hash: str) -> int:
         user_id = cursor.lastrowid
         await db.execute(
             "INSERT INTO profile (user_id, name, personality, speaking_style, avatar_emoji, updated_at) VALUES (?,?,?,?,?,?)",
-            (user_id, "小暖", "温柔体贴", "亲密随意", "🌸", now),
+            (user_id, "晓柔", "温柔体贴", "温柔低语", "/avatars/1f42a266ff2e5e663cc3a41dbe2d827b.png", now),
         )
         await db.commit()
         return user_id
