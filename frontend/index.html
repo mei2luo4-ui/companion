@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>小暖</title>
+  <title>新霓虹 · 陪伴网络</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -21,10 +21,6 @@
     </div>
   </div>
   <div class="topbar-actions">
-    <button class="bell-btn" id="bellBtn" title="查看通知" aria-label="查看通知">
-      ◎
-      <div class="bell-badge" id="bellBadge"></div>
-    </button>
   </div>
 </div>
 
@@ -53,17 +49,17 @@
     <span>◈</span>
     <span>聊天</span>
   </a>
-  <a href="diary.html" class="nav-item">
-    <span>◇</span>
-    <span>日记</span>
+  <a href="friends.html" class="nav-item">
+    <span>◎</span>
+    <span>好友</span>
   </a>
-  <a href="settings.html" class="nav-item">
-    <span>◉</span>
-    <span>设置</span>
+  <a href="moments.html" class="nav-item" id="momentsNavBtn">
+    <span>◇</span>
+    <span>动态</span>
   </a>
 </nav>
 
-<!-- 事件弹窗 -->
+<!-- 事件弹窗（保留供后台通知兼容用）-->
 <div class="modal-overlay hidden" id="eventModal" role="dialog" aria-modal="true" aria-labelledby="eventTitle">
   <div class="event-card">
     <div class="event-header">
@@ -81,5 +77,23 @@
 <div class="toast" id="toast"></div>
 
 <script src="app.js"></script>
+<script>
+(function() {
+  const token = localStorage.getItem('token');
+  if (!token) return;
+  function checkUnread() {
+    fetch('/moments?limit=1', { headers: { 'Authorization': 'Bearer ' + token } })
+      .then(r => r.json()).then(({ moments }) => {
+        if (!moments || !moments.length) return;
+        const latest = moments[0].id;
+        const seen = +localStorage.getItem('moments_last_seen') || 0;
+        const btn = document.getElementById('momentsNavBtn');
+        if (btn) btn.classList.toggle('has-unread', latest > seen);
+      }).catch(() => {});
+  }
+  checkUnread();
+  setInterval(checkUnread, 60000);
+})();
+</script>
 </body>
 </html>

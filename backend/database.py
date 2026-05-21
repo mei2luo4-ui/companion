@@ -65,18 +65,39 @@ CREATE TABLE IF NOT EXISTS memories (
     created_at TEXT NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
+
+CREATE TABLE IF NOT EXISTS moments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    character_name TEXT NOT NULL DEFAULT '',
+    content TEXT NOT NULL,
+    likes INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS moment_comments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    moment_id INTEGER NOT NULL,
+    character_name TEXT NOT NULL,
+    content TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (moment_id) REFERENCES moments(id)
+);
 """
 
 
 async def init_db():
     async with aiosqlite.connect(DB_PATH) as db:
         await db.executescript(CREATE_TABLES)
-        # 迁移：给旧数据库的 messages 表加 character_name 列
-        try:
-            await db.execute("ALTER TABLE messages ADD COLUMN character_name TEXT NOT NULL DEFAULT ''")
-            await db.commit()
-        except Exception:
-            pass  # 列已存在则忽略
+        for migration in [
+            "ALTER TABLE messages ADD COLUMN character_name TEXT NOT NULL DEFAULT ''",
+        ]:
+            try:
+                await db.execute(migration)
+                await db.commit()
+            except Exception:
+                pass
 
 
 async def create_user(username: str, password_hash: str) -> int:
@@ -293,3 +314,55 @@ async def get_all_user_ids() -> list[int]:
         cursor = await db.execute("SELECT id FROM users")
         rows = await cursor.fetchall()
         return [r[0] for r in rows]
+
+
+async def add_moment(user_id: int, content: str, character_name: str = '') -> int:
+    now = datetime.now().isoformat()
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute(
+            "INSERT INTO moments (user_id, character_name, content, created_at) VALUES (?,?,?,?)",
+            (user_id, character_name, content, now),
+        )
+        await db.commit()
+        return cursor.lastrowid
+
+
+async def get_moments(user_id: int, limit: int = 30) -> list[dict]:
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute(
+            "SELECT * FROM moments WHERE user_id=? ORDER BY created_at DESC LIMIT ?",
+            (user_id, limit),
+        )
+        rows = await cursor.fetchall()
+        return [dict(r) for r in rows]
+
+
+async def like_moment(moment_id: int) -> int:
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("UPDATE moments SET likes = likes + 1 WHERE id=?", (moment_id,))
+        await db.commit()
+        cursor = await db.execute("SELECT likes FROM moments WHERE id=?", (moment_id,))
+        row = await cursor.fetchone()
+        return row[0] if row else 0
+
+
+async def add_moment_comment(moment_id: int, character_name: str, content: str) -> int:
+    now = datetime.now().isoformat()
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute(
+            "INSERT INTO moment_comments (moment_id, character_name, content, created_at) VALUES (?,?,?,?)",
+            (moment_id, character_name, content, now),
+        )
+        await db.commit()
+        return cursor.lastrowid
+
+
+async def get_moment_comments(moment_id: int) -> list[dict]:
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute(
+            "SELECT * FROM moment_comments WHERE moment_id=? ORDER BY created_at ASC",
+            (moment_id,),
+        )
+        return [dict(r) for r in await cursor.fetchall()]

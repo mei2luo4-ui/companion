@@ -32,10 +32,15 @@ from .database import (
     get_mood_history,
     create_user,
     get_user_by_username,
+    add_moment,
+    get_moments,
+    like_moment,
+    add_moment_comment,
+    get_moment_comments,
 )
 from .companion import chat_stream
 from .events import event_scheduler_loop
-from .models import ChatRequest, DiaryRequest, ProfileRequest, RegisterRequest, LoginRequest
+from .models import ChatRequest, DiaryRequest, ProfileRequest, RegisterRequest, LoginRequest, MomentRequest
 
 SECRET_KEY = os.getenv("SECRET_KEY", "change-me-in-production")
 
@@ -214,6 +219,33 @@ async def upload_avatar(file: UploadFile = File(...), user_id: int = Depends(get
 @app.get("/")
 async def root():
     return RedirectResponse(url="/login.html")
+
+
+@app.post("/moments")
+async def create_moment(req: MomentRequest, user_id: int = Depends(get_current_user)):
+    if not req.content.strip():
+        raise HTTPException(status_code=400, detail="内容不能为空")
+    if len(req.content) > 500:
+        raise HTTPException(status_code=400, detail="内容不能超过500字")
+    entry_id = await add_moment(user_id, req.content)
+    return {"id": entry_id}
+
+
+@app.get("/moments")
+async def list_moments(limit: int = 30, user_id: int = Depends(get_current_user)):
+    entries = await get_moments(user_id, limit)
+    return {"moments": entries}
+
+
+@app.post("/moments/{moment_id}/like")
+async def like_moment_route(moment_id: int, user_id: int = Depends(get_current_user)):
+    likes = await like_moment(moment_id)
+    return {"likes": likes}
+
+
+@app.get("/moments/{moment_id}/comments")
+async def list_moment_comments(moment_id: int, user_id: int = Depends(get_current_user)):
+    return {"comments": await get_moment_comments(moment_id)}
 
 
 app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="static")

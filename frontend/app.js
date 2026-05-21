@@ -44,7 +44,18 @@ let isSending = false;
 async function init() {
   await loadProfile();
   await loadHistory();
-  startEventPolling();
+  const reply = localStorage.getItem('moment_reply');
+  if (reply) {
+    localStorage.removeItem('moment_reply');
+    try {
+      const { name, content } = JSON.parse(reply);
+      isSending = true;
+      document.getElementById('sendBtn').disabled = true;
+      await streamBotReply(`（用户刚刚看了你发的一条动态："${content}"，请自然地主动和用户聊起这条动态，不要提及"用户"这个词）`);
+      isSending = false;
+      document.getElementById('sendBtn').disabled = false;
+    } catch {}
+  }
 }
 
 async function loadProfile() {
@@ -62,6 +73,7 @@ function updateProfileUI() {
   const name = document.getElementById('topName');
   if (avatar) avatar.innerHTML = renderAvatar(profile.avatar_emoji);
   if (name) name.textContent = profile.name || '小暖';
+  document.title = `${profile.name || '小暖'} · 新霓虹`;
   const replyBtn = document.getElementById('eventReplyBtn');
   if (replyBtn) replyBtn.textContent = `回复${profile.name}`;
 }
@@ -88,20 +100,27 @@ async function loadHistory() {
 }
 
 const WELCOME_MESSAGES = {
-  '晓柔': '嗯，你来了。今天过得怎么样？',
-  '星澜': '……是你。有什么事吗。',
-  '糖糖': '哇你终于上线了！我刚才还在想你呢！',
-  '沐雪': '茶刚泡好，坐吧。',
-  '凌霄': '来了。说吧，什么事。',
-  '知微': '你好。有什么想聊的，直接说。',
-  '阿橘': '哎你来啦！正好，我刚捡到个好东西，等会儿给你看。',
-  '诗韵': '你来了……我今天写了一句话，一直想找人说。',
+  '晓柔': ['你来啦～今天过得怎么样？', '嗯，等你好一会儿了', '你终于上线了，我刚才还在想你', '今天还好吗？', '来了～有什么想说的吗'],
+  '星澜': ['来了。', '嗯。', '有事吗。', '你今天来得挺早。', '……在呢。'],
+  '糖糖': ['哇你来了！！我超想你的！', '终于等到你了啊！', '你来了你来了！今天发生好多事！', '哎哎哎你上线了！', '我刚才还在刷消息等你呢！'],
+  '沐雪': ['你来了，正好有话想说', '等你好一会儿了～', '嗯，来了', '今天怎么样？', '你来了，我刚在想你'],
+  '凌霄': ['来了，有事吗', '嗯，在呢', '说吧', '你今天来得挺准时', '有什么事直说'],
+  '知微': ['你来了，最近怎么样', '在呢，有什么想聊的', '嗯，来了', '今天有什么事吗', '你好，我在'],
+  '阿橘': ['你来啦！我刚才还在想你！', '哎终于等到你了！', '你上线了！我有话跟你说！', '来了来了！今天有好东西给你看！', '哎哎你来了！'],
+  '诗韵': ['你来了～', '等你好久了', '你上线了，我刚在想你', '嗯，来了，今天怎么样', '你来了，我有话想说'],
 };
 
 function showWelcome() {
-  const msg = WELCOME_MESSAGES[profile.name];
-  if (msg) appendMessage('assistant', msg, false);
-  scrollToBottom();
+  const msgs = WELCOME_MESSAGES[profile.name];
+  if (!msgs) return;
+  const hint = msgs[Math.floor(Math.random() * msgs.length)];
+  isSending = true;
+  document.getElementById('sendBtn').disabled = true;
+  streamBotReply(`（请以这句话的风格和内容主动开口，直接说这句话或非常接近的表达，不要解释，不要加前缀："${hint}"）`)
+    .then(() => {
+      isSending = false;
+      document.getElementById('sendBtn').disabled = false;
+    });
 }
 
 // ---- 消息渲染 ----
@@ -160,6 +179,52 @@ function scrollToBottom() {
 }
 
 // ---- 发送消息 ----
+async function streamBotReply(message) {
+  const typingEl = appendTypingIndicator();
+  let botBubble = null;
+  let botText = '';
+  try {
+    const res = await authFetch('/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message }),
+    });
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    const processLines = (chunk) => {
+      const lines = chunk.split('\n');
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (!data || data === '[DONE]') continue;
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.type === 'text') {
+            if (!botBubble) { removeTypingIndicator(); botBubble = appendMessage('assistant', '', true); }
+            botText += parsed.content;
+            botBubble.textContent = botText;
+            scrollToBottom();
+          } else if (parsed.type === 'emotion') {
+            updateEmotionUI(parsed.data);
+          }
+        } catch {}
+      }
+    };
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) { if (buffer) processLines(buffer); break; }
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      processLines(lines.join('\n'));
+    }
+  } catch {
+    removeTypingIndicator();
+    if (botText === '') { appendMessage('assistant', '网络好像出了点问题，稍后再试试？'); scrollToBottom(); }
+  }
+}
+
 async function sendMessage() {
   if (isSending) return;
   const input = document.getElementById('inputBox');
@@ -174,64 +239,7 @@ async function sendMessage() {
   appendMessage('user', text);
   scrollToBottom();
 
-  const typingEl = appendTypingIndicator();
-  let botBubble = null;
-  let botText = '';
-
-  try {
-    const res = await authFetch('/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text }),
-    });
-
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-
-    const processLines = (text) => {
-      const lines = text.split('\n');
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const data = line.slice(6).trim();
-        if (!data || data === '[DONE]') continue;
-        try {
-          const parsed = JSON.parse(data);
-          if (parsed.type === 'text') {
-            if (!botBubble) {
-              removeTypingIndicator();
-              botBubble = appendMessage('assistant', '', true);
-            }
-            botText += parsed.content;
-            botBubble.textContent = botText;
-            scrollToBottom();
-          } else if (parsed.type === 'emotion') {
-            updateEmotionUI(parsed.data);
-          }
-        } catch (e) {
-          // 忽略解析错误
-        }
-      }
-    };
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
-        if (buffer) processLines(buffer);
-        break;
-      }
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop();
-      processLines(lines.join('\n'));
-    }
-  } catch (e) {
-    removeTypingIndicator();
-    if (botText === '') {
-      appendMessage('assistant', '网络好像出了点问题，稍后再试试？');
-      scrollToBottom();
-    }
-  }
+  await streamBotReply(text);
 
   isSending = false;
   document.getElementById('sendBtn').disabled = false;

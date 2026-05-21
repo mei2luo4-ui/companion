@@ -171,6 +171,15 @@ body::before {
 }
 .nav-item span:first-child { font-size: 18px; }
 
+@keyframes navGlow {
+  0%, 100% { text-shadow: 0 0 6px var(--primary-glow); color: var(--primary); }
+  50% { text-shadow: 0 0 18px var(--primary), 0 0 32px var(--primary-glow); color: #ffb3d1; }
+}
+.nav-item.has-unread span:first-child {
+  animation: navGlow 1.2s ease-in-out infinite;
+  color: var(--primary);
+}
+
 /* ===== 聊天区域 ===== */
 .chat-container {
   max-width: 700px;
@@ -707,15 +716,17 @@ body.auth-page {
   max-width: 360px;
 }
 
-.auth-logo { font-size: 40px; text-align: center; margin-bottom: 8px; color: var(--primary); }
+.auth-logo { text-align: center; margin-bottom: 8px; color: var(--primary); display: flex; justify-content: center; }
 .auth-title {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
   text-align: center;
   margin-bottom: 24px;
   color: var(--text);
-  letter-spacing: 1px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
 }
+.auth-title .dot { color: var(--primary); margin: 0 4px; }
 
 .auth-tabs {
   display: flex;
@@ -787,3 +798,249 @@ body.auth-page {
   transition: all 0.2s;
 }
 .logout-btn:hover { border-color: #ff4d4f; color: #ff6b6b; }
+
+/* ===== 好友页 ===== */
+.friend-list { display: flex; flex-direction: column; gap: 6px; }
+
+.friend-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.25);
+  text-align: left;
+  width: 100%;
+  font-family: inherit;
+}
+.friend-card:hover { border-color: var(--primary); box-shadow: var(--glow-sm); background: rgba(255,107,157,0.03); }
+.friend-card.active { border-left: 3px solid var(--primary); background: rgba(255,107,157,0.05); }
+
+.friend-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  object-fit: cover;
+  flex-shrink: 0;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.friend-card.active .friend-avatar,
+.friend-card:hover .friend-avatar { border-color: var(--primary); box-shadow: 0 0 8px var(--primary-glow); }
+
+/* 名字 + 签名横排 */
+.friend-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.friend-name { font-size: 14px; font-weight: 600; color: var(--text); flex-shrink: 0; }
+
+.friend-sig {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.friend-status {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 20px;
+  flex-shrink: 0;
+}
+.friend-status.online { background: rgba(82,196,26,0.12); color: #52c41a; border: 1px solid rgba(82,196,26,0.3); }
+.friend-status.offline { background: rgba(138,122,154,0.1); color: var(--text-muted); border: 1px solid var(--border); }
+
+/* ===== 动态页 ===== */
+.moment-compose {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.35);
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.moment-compose-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg-card2);
+  border: 1.5px solid rgba(196,77,255,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #c44dff;
+  font-size: 14px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.moment-compose-body { flex: 1; min-width: 0; }
+
+.moment-compose textarea {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  padding: 4px 0 8px;
+  font-size: 15px;
+  font-family: inherit;
+  resize: none;
+  min-height: 56px;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  line-height: 1.6;
+  transition: border-color 0.2s;
+}
+.moment-compose textarea::placeholder { color: var(--text-muted); }
+.moment-compose textarea:focus { border-bottom-color: var(--primary); }
+
+.moment-compose-actions { display: flex; justify-content: flex-end; margin-top: 8px; }
+
+.moment-post-btn {
+  padding: 6px 18px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: var(--glow-sm);
+  transition: box-shadow 0.2s, opacity 0.2s;
+  font-family: inherit;
+  letter-spacing: 0.3px;
+}
+.moment-post-btn:hover { box-shadow: var(--glow-md); }
+.moment-post-btn:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+
+.moment-feed { display: flex; flex-direction: column; gap: 1px; }
+
+.moment-card {
+  background: var(--bg-card);
+  border: none;
+  border-bottom: 1px solid var(--border);
+  padding: 14px 16px;
+  animation: fadeUp 0.2s ease;
+  display: flex;
+  gap: 12px;
+}
+.moment-card:first-child { border-radius: var(--radius) var(--radius) 0 0; }
+.moment-card:last-child { border-radius: 0 0 var(--radius) var(--radius); border-bottom: none; }
+.moment-card:only-child { border-radius: var(--radius); border-bottom: none; }
+
+/* wrap feed in a card container */
+.moment-feed-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 2px 16px rgba(0,0,0,0.3);
+  overflow: hidden;
+}
+
+.moment-left { flex-shrink: 0; }
+
+.moment-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  object-fit: cover;
+}
+.moment-avatar.user-avatar {
+  background: var(--bg-card2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #c44dff;
+  font-size: 15px;
+  border-color: rgba(196,77,255,0.3);
+}
+
+.moment-right { flex: 1; min-width: 0; }
+
+.moment-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.moment-meta { display: flex; align-items: baseline; gap: 8px; flex: 1; min-width: 0; }
+.moment-name { font-size: 14px; font-weight: 600; color: var(--primary); flex-shrink: 0; }
+.moment-time { font-size: 11px; color: var(--text-muted); }
+
+.moment-content {
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--text);
+  white-space: pre-wrap;
+  margin-bottom: 10px;
+  word-break: break-word;
+}
+
+.moment-actions { display: flex; gap: 8px; align-items: center; }
+
+.like-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid transparent;
+  border-radius: 20px;
+  background: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.like-btn:hover { color: var(--primary); }
+.like-btn.liked { color: var(--primary); }
+.like-btn.liked .like-heart { filter: drop-shadow(0 0 4px var(--primary-glow)); }
+
+.reply-moment-btn {
+  padding: 4px 10px;
+  border: none;
+  border-radius: 20px;
+  background: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: color 0.2s;
+  font-family: inherit;
+}
+.reply-moment-btn:hover { color: var(--primary); }
+
+.moment-comments { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.moment-comment { display: flex; align-items: flex-start; gap: 8px; }
+.comment-avatar { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.comment-body { font-size: 13px; color: var(--text-muted); line-height: 1.4; }
+.comment-name { color: var(--primary); margin-right: 4px; font-weight: 500; }
+
+.new-moments-bar {
+  background: var(--primary);
+  color: #000;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px;
+  cursor: pointer;
+  border-radius: var(--radius) var(--radius) 0 0;
+  animation: fadeUp 0.3s ease;
+}
+.new-moments-bar.hidden { display: none; }

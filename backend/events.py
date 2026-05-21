@@ -42,10 +42,48 @@ async def _check_for_user(user_id: int):
             if random.random() < 0.4:
                 await _create_event(user_id, event_type, profile, recent_emotions)
 
-    # lore 事件：每天最多一次，随机时段触发
     if hour in LORE_HOURS and not await db.has_event_today(user_id, "lore"):
         if random.random() < 0.3:
             await _create_lore_event(user_id, profile)
+
+    # 高频动态：每次轮询随机选一个内置角色发动态（不受每日限制）
+    if random.random() < 0.7:
+        random_profile = random.choice(companion.ALL_CHARACTER_PROFILES)
+        await _create_moment_post(user_id, random_profile, recent_emotions)
+
+
+def _get_related_characters(author_name: str) -> list[str]:
+    return [
+        name for name, text in companion.CHARACTER_RELATIONS.items()
+        if name != author_name and author_name in text
+    ]
+
+
+async def _trigger_comments(moment_id: int, author_name: str, post_content: str):
+    async def _one(char_name: str):
+        try:
+            comment = await companion.generate_moment_comment(char_name, author_name, post_content)
+            await db.add_moment_comment(moment_id, char_name, comment)
+        except Exception:
+            pass
+
+    tasks = [
+        asyncio.create_task(_one(char_name))
+        for char_name in _get_related_characters(author_name)
+        if random.random() < 0.4
+    ]
+    if tasks:
+        await asyncio.gather(*tasks)
+
+
+async def _create_moment_post(user_id: int, profile: dict, recent_emotions: list[dict]):
+    """生成一条纯动态（不写入 events 表，不受每日限制）"""
+    try:
+        content = await companion.generate_moment_post(profile)
+        moment_id = await db.add_moment(user_id, content, character_name=profile["name"])
+    except Exception:
+        return
+    await _trigger_comments(moment_id, profile["name"], content)
 
 
 async def _create_event(user_id: int, event_type: str, profile: dict, recent_emotions: list[dict]):
@@ -53,8 +91,10 @@ async def _create_event(user_id: int, event_type: str, profile: dict, recent_emo
         data = await companion.generate_event_content(event_type, profile, recent_emotions)
         scheduled_at = datetime.now().isoformat()
         await db.add_event(user_id, event_type, data["title"], data["content"], scheduled_at)
+        moment_id = await db.add_moment(user_id, data["content"], character_name=profile["name"])
     except Exception:
-        pass
+        return
+    await _trigger_comments(moment_id, profile["name"], data["content"])
 
 
 async def _create_lore_event(user_id: int, profile: dict):
@@ -63,13 +103,14 @@ async def _create_lore_event(user_id: int, profile: dict):
         seen = await db.get_seen_lore_chapters(user_id, profile["name"])
         chapter = companion.get_next_lore_chapter(profile["name"], seen)
         if chapter is None:
-            return  # 所有章节已推送完毕
+            return
         scheduled_at = datetime.now().isoformat()
-        # content 存储 JSON，包含章节号，供去重查询使用
         content_json = json.dumps({"chapter": chapter["chapter"], "text": chapter["content"]}, ensure_ascii=False)
         await db.add_event(user_id, "lore", chapter["title"], content_json, scheduled_at)
+        moment_id = await db.add_moment(user_id, chapter["content"], character_name=profile["name"])
     except Exception:
-        pass
+        return
+    await _trigger_comments(moment_id, profile["name"], chapter["content"])
 
 
 async def event_scheduler_loop():
@@ -80,5 +121,5 @@ async def event_scheduler_loop():
             await check_and_generate_events()
         except Exception:
             pass
-        # 每 5~15 分钟检查一次
-        await asyncio.sleep(random.randint(300, 900))
+        # 每 30~60 秒检查一次
+        await asyncio.sleep(random.randint(30, 60))

@@ -27,3 +27,7 @@ class ProfileRequest(BaseModel):
     personality: str
     speaking_style: str
     avatar_emoji: str
+
+
+class MomentRequest(BaseModel):
+    content: str

@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>新霓虹 · 动态</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="companion-info">
+    <div style="font-size:22px;color:var(--primary)">◇</div>
+    <div>
+      <div class="companion-name">动态</div>
+      <div class="emotion-status"><span>她们在说什么</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="page-container">
+
+  <!-- 发布框 -->
+  <div class="moment-compose">
+    <div class="moment-compose-avatar">◎</div>
+    <div class="moment-compose-body">
+      <textarea id="composeInput" placeholder="说点什么..." maxlength="500"></textarea>
+      <div class="moment-compose-actions">
+        <button class="moment-post-btn" id="postBtn">发布</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 动态流 -->
+  <div class="moment-feed-wrap">
+    <div class="new-moments-bar hidden" id="newMomentsBar">有新动态，点击刷新</div>
+    <div class="moment-feed" id="momentFeed">
+      <div class="moment-card" style="justify-content:center;border:none">
+        <span style="color:var(--text-muted);font-size:14px">加载中…</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<nav class="bottomnav" aria-label="主导航">
+  <a href="index.html" class="nav-item"><span>◈</span><span>聊天</span></a>
+  <a href="friends.html" class="nav-item"><span>◎</span><span>好友</span></a>
+  <a href="moments.html" class="nav-item active" id="momentsNavBtn" aria-current="page"><span>◇</span><span>动态</span></a>
+</nav>
+
+<script>
+const token = localStorage.getItem('token');
+if (!token) location.href = 'login.html';
+
+function authFetch(url, options = {}) {
+  const headers = { 'Authorization': `Bearer ${token}`, ...(options.headers || {}) };
+  if (options.body && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
+  return fetch(url, { ...options, headers }).then(res => {
+    if (res.status === 401) { localStorage.removeItem('token'); location.href = 'login.html'; }
+    return res;
+  });
+}
+
+const BUILTIN_MAP = {
+  '晓柔': '/avatars/1f42a266ff2e5e663cc3a41dbe2d827b.png',
+  '星澜': '/avatars/465f5350609f6f399c6e8aa6f92e30d6.png',
+  '糖糖': '/avatars/53dd9eb3edbc68ea22339dc917018d6d.png',
+  '沐雪': '/avatars/70f0c7948588749b4af31af065703455.png',
+  '凌霄': '/avatars/7b9230954d804b3e65e8efa6cb3cbe3e.png',
+  '知微': '/avatars/c3494530cc2acdd0dc350c05505274d7.png',
+  '阿橘': '/avatars/cd52565c0a9aa160e0b10fa18e0dd271.png',
+  '诗韵': '/avatars/e11dd9428d262a6116bd9fb4e5ff3e21.png',
+};
+
+const BUILTIN_PROFILES = {
+  '晓柔': { personality: '温柔体贴', speaking_style: '温柔低语' },
+  '星澜': { personality: '冷艳神秘', speaking_style: '深沉内敛' },
+  '糖糖': { personality: '元气少女', speaking_style: '活泼跳脱' },
+  '沐雪': { personality: '温婉古典', speaking_style: '古风雅韵' },
+  '凌霄': { personality: '御姐霸气', speaking_style: '简洁干练' },
+  '知微': { personality: '沉稳知性', speaking_style: '正式得体' },
+  '阿橘': { personality: '俏皮搞怪', speaking_style: '亲密随意' },
+  '诗韵': { personality: '活泼开朗', speaking_style: '文艺诗意' },
+};
+
+const BUILTIN_DEFAULT = '/avatars/1f42a266ff2e5e663cc3a41dbe2d827b.png';
+
+let profile = { name: '', avatar_emoji: '' };
+const likedSet = new Set(JSON.parse(localStorage.getItem('liked_moments') || '[]'));
+
+function saveLiked() {
+  localStorage.setItem('liked_moments', JSON.stringify([...likedSet]));
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function relativeTime(iso) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return '刚刚';
+  if (m < 60) return `${m}分钟前`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}小时前`;
+  return `${Math.floor(h / 24)}天前`;
+}
+
+function getAvatarForMoment(m) {
+  if (!m.character_name) return null; // user
+  // custom role: avatar_emoji may be stored; use builtin map first
+  if (BUILTIN_MAP[m.character_name]) return BUILTIN_MAP[m.character_name];
+  // check custom roles in localStorage
+  try {
+    const customs = JSON.parse(localStorage.getItem('custom_roles') || '[]');
+    const found = customs.find(c => c.name === m.character_name);
+    if (found) return found.avatar;
+  } catch {}
+  return BUILTIN_DEFAULT;
+}
+
+function renderMoments(moments) {
+  const feed = document.getElementById('momentFeed');
+  if (moments.length === 0) {
+    feed.innerHTML = '<div class="moment-card" style="justify-content:center;border:none"><span style="color:var(--text-muted);font-size:14px">还没有动态，发一条吧</span></div>';
+    return;
+  }
+  feed.innerHTML = moments.map(m => {
+    const isChar = !!m.character_name;
+    const name = isChar ? m.character_name : '我';
+    const avatarSrc = isChar ? getAvatarForMoment(m) : null;
+    const liked = likedSet.has(m.id);
+    const isCurrentChar = isChar && m.character_name === profile.name;
+
+    const avatarHtml = isChar
+      ? `<img class="moment-avatar" src="${avatarSrc}" alt="${name}">`
+      : `<div class="moment-avatar user-avatar">◎</div>`;
+
+    return `
+      <div class="moment-card" data-id="${m.id}">
+        <div class="moment-left">${avatarHtml}</div>
+        <div class="moment-right">
+          <div class="moment-header">
+            <div class="moment-meta">
+              <span class="moment-name">${name}</span>
+              <span class="moment-time">${relativeTime(m.created_at)}</span>
+            </div>
+          </div>
+          <div class="moment-content">${escHtml(m.content)}</div>
+          <div class="moment-actions">
+            <button class="like-btn${liked ? ' liked' : ''}" data-id="${m.id}" data-likes="${m.likes}">
+              <span class="like-heart">♡</span><span class="like-count">${m.likes > 0 ? m.likes : ''}</span>
+            </button>
+            ${isChar ? `<button class="reply-moment-btn" data-name="${name}" data-content="${escHtml(m.content)}">回复</button>` : ''}
+          </div>
+          <div class="moment-comments" id="comments-${m.id}"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+document.getElementById('momentFeed').addEventListener('click', async e => {
+  const likeBtn = e.target.closest('.like-btn');
+  if (likeBtn) {
+    const id = +likeBtn.dataset.id;
+    const alreadyLiked = likedSet.has(id);
+    const countEl = likeBtn.querySelector('.like-count');
+    let likes = +likeBtn.dataset.likes;
+    if (alreadyLiked) {
+      likedSet.delete(id);
+      likeBtn.classList.remove('liked');
+      likes = Math.max(0, likes - 1);
+      likeBtn.dataset.likes = likes;
+      countEl.textContent = likes > 0 ? likes : '';
+    } else {
+      try {
+        const res = await authFetch(`/moments/${id}/like`, { method: 'POST' });
+        const data = await res.json();
+        likes = data.likes;
+      } catch {}
+      likedSet.add(id);
+      likeBtn.classList.add('liked');
+      likeBtn.dataset.likes = likes;
+      countEl.textContent = likes > 0 ? likes : '';
+    }
+    saveLiked();
+    return;
+  }
+
+  const replyBtn = e.target.closest('.reply-moment-btn');
+  if (replyBtn) {
+    const name = replyBtn.dataset.name;
+    const content = replyBtn.dataset.content;
+    // 切换到该角色
+    const p = BUILTIN_PROFILES[name] || (() => {
+      try {
+        const c = JSON.parse(localStorage.getItem('custom_roles') || '[]').find(r => r.name === name);
+        return c ? { personality: c.personality, speaking_style: c.style } : null;
+      } catch { return null; }
+    })();
+    if (p) {
+      await authFetch('/profile', {
+        method: 'POST',
+        body: JSON.stringify({ name, personality: p.personality, speaking_style: p.speaking_style, avatar_emoji: BUILTIN_MAP[name] || '' }),
+      });
+    }
+    localStorage.setItem('moment_reply', JSON.stringify({ name, content }));
+    location.href = 'index.html';
+  }
+});
+
+document.getElementById('postBtn').addEventListener('click', async () => {
+  const input = document.getElementById('composeInput');
+  const content = input.value.trim();
+  if (!content) return;
+  const btn = document.getElementById('postBtn');
+  btn.disabled = true;
+  try {
+    await authFetch('/moments', { method: 'POST', body: JSON.stringify({ content }) });
+    input.value = '';
+    await loadMoments();
+    showToast('发布成功');
+  } catch { showToast('发布失败，稍后再试'); }
+  btn.disabled = false;
+});
+
+async function loadCommentsForMoment(momentId) {
+  try {
+    const res = await authFetch(`/moments/${momentId}/comments`);
+    const { comments } = await res.json();
+    const el = document.getElementById(`comments-${momentId}`);
+    if (!el || !comments.length) return;
+    el.innerHTML = comments.map(c => `
+      <div class="moment-comment">
+        <img class="comment-avatar" src="${BUILTIN_MAP[c.character_name] || BUILTIN_DEFAULT}" alt="${c.character_name}">
+        <div class="comment-body">
+          <span class="comment-name">${c.character_name}</span>
+          <span class="comment-text">${escHtml(c.content)}</span>
+        </div>
+      </div>
+    `).join('');
+  } catch {}
+}
+
+async function loadMoments(markSeen = false) {
+  try {
+    const res = await authFetch('/moments?limit=50');
+    const { moments } = await res.json();
+    renderMoments(moments);
+    moments.filter(m => m.character_name).forEach(m => loadCommentsForMoment(m.id));
+    if (moments.length && markSeen) {
+      localStorage.setItem('moments_last_seen', moments[0].id);
+    }
+  } catch {
+    document.getElementById('momentFeed').innerHTML =
+      '<div class="moment-card" style="justify-content:center;border:none"><span style="color:var(--text-muted);font-size:14px">加载失败，请刷新重试</span></div>';
+  }
+}
+
+async function loadProfile() {
+  try {
+    const res = await authFetch('/profile');
+    profile = await res.json();
+  } catch {}
+}
+
+async function init() {
+  await loadProfile();
+  await loadMoments(true);
+  setInterval(async () => {
+    try {
+      const res = await authFetch('/moments?limit=1');
+      const { moments } = await res.json();
+      if (!moments.length) return;
+      const latestSeen = +localStorage.getItem('moments_last_seen') || 0;
+      if (moments[0].id > latestSeen) {
+        document.getElementById('newMomentsBar').classList.remove('hidden');
+      }
+    } catch {}
+  }, 30000);
+}
+
+document.getElementById('newMomentsBar').addEventListener('click', async () => {
+  document.getElementById('newMomentsBar').classList.add('hidden');
+  await loadMoments(true);
+});
+
+init();
+</script>
+<script>
+(function() {
+  const token = localStorage.getItem('token');
+  if (!token) return;
+  function checkUnread() {
+    fetch('/moments?limit=1', { headers: { 'Authorization': 'Bearer ' + token } })
+      .then(r => r.json()).then(({ moments }) => {
+        if (!moments || !moments.length) return;
+        const latest = moments[0].id;
+        const seen = +localStorage.getItem('moments_last_seen') || 0;
+        const btn = document.getElementById('momentsNavBtn');
+        if (btn) btn.classList.toggle('has-unread', latest > seen);
+      }).catch(() => {});
+  }
+  checkUnread();
+  setInterval(checkUnread, 60000);
+})();
+</script>
+</body>
+</html>
