@@ -43,12 +43,12 @@ let isSending = false;
 // ---- 初始化 ----
 async function init() {
   await loadProfile();
-  await loadHistory();
   const reply = localStorage.getItem('moment_reply');
+  await loadHistory(!reply);
   if (reply) {
     localStorage.removeItem('moment_reply');
     try {
-      const { name, content } = JSON.parse(reply);
+      const { content } = JSON.parse(reply);
       isSending = true;
       document.getElementById('sendBtn').disabled = true;
       await streamBotReply(`（用户刚刚看了你发的一条动态："${content}"，请自然地主动和用户聊起这条动态，不要提及"用户"这个词）`, '');
@@ -78,7 +78,7 @@ function updateProfileUI() {
   if (replyBtn) replyBtn.textContent = `回复${profile.name}`;
 }
 
-async function loadHistory() {
+async function loadHistory(allowWelcome = true) {
   const container = document.getElementById('messages');
   if (!container) return;
 
@@ -93,9 +93,9 @@ async function loadHistory() {
       appendMessage(msg.role, msg.content, false);
     }
     scrollToBottom();
-    if (messages.length === 0 || forceWelcome) showWelcome();
+    if (allowWelcome && (messages.length === 0 || forceWelcome)) showWelcome();
   } catch (e) {
-    showWelcome();
+    if (allowWelcome) showWelcome();
   }
 }
 
