@@ -221,12 +221,14 @@ document.getElementById('presetGrid').addEventListener('click', async e => {
     current = { name: p.name, avatar: p.avatar, personality: p.personality, style: p.style };
     renderPresetGrid(); updateMainPreview();
     await saveProfile();
+    sessionStorage.setItem('show_welcome', '1');
     showToast(`已切换为 ${p.name}`);
   } else if (el.dataset.type === 'custom') {
     const p = customRoles[idx];
     current = { name: p.name, avatar: p.avatar, personality: p.personality, style: p.style };
     renderPresetGrid(); updateMainPreview();
     await saveProfile();
+    sessionStorage.setItem('show_welcome', '1');
     showToast(`已切换为 ${p.name}`);
   } else if (el.dataset.type === 'edit-custom') {
     openCustomModal(customRoles[idx], idx);

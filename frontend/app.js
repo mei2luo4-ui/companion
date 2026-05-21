@@ -70,6 +70,9 @@ async function loadHistory() {
   const container = document.getElementById('messages');
   if (!container) return;
 
+  const forceWelcome = sessionStorage.getItem('show_welcome');
+  if (forceWelcome) sessionStorage.removeItem('show_welcome');
+
   try {
     const res = await authFetch('/history?limit=30');
     const { messages } = await res.json();
@@ -78,7 +81,7 @@ async function loadHistory() {
       appendMessage(msg.role, msg.content, false);
     }
     scrollToBottom();
-    if (messages.length === 0) showWelcome();
+    if (messages.length === 0 || forceWelcome) showWelcome();
   } catch (e) {
     showWelcome();
   }
