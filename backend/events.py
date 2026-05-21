@@ -128,5 +128,5 @@ async def event_scheduler_loop():
             await check_and_generate_events()
         except Exception:
             pass
-        # 每 2~4 分钟检查一次
-        await asyncio.sleep(random.randint(120, 240))
+        # 每 1~2 分钟检查一次
+        await asyncio.sleep(random.randint(60, 120))
