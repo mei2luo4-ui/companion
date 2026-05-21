@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS profile (
 CREATE TABLE IF NOT EXISTS messages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
+    character_name TEXT NOT NULL DEFAULT '',
     role TEXT NOT NULL,
     content TEXT NOT NULL,
     emotion_label TEXT,
@@ -70,7 +71,12 @@ CREATE TABLE IF NOT EXISTS memories (
 async def init_db():
     async with aiosqlite.connect(DB_PATH) as db:
         await db.executescript(CREATE_TABLES)
-        await db.commit()
+        # 迁移：给旧数据库的 messages 表加 character_name 列
+        try:
+            await db.execute("ALTER TABLE messages ADD COLUMN character_name TEXT NOT NULL DEFAULT ''")
+            await db.commit()
+        except Exception:
+            pass  # 列已存在则忽略
 
 
 async def create_user(username: str, password_hash: str) -> int:
@@ -115,12 +121,12 @@ async def update_profile(user_id: int, name: str, personality: str, speaking_sty
         await db.commit()
 
 
-async def add_message(user_id: int, role: str, content: str, emotion_label: str = None, emotion_score: float = None) -> int:
+async def add_message(user_id: int, role: str, content: str, emotion_label: str = None, emotion_score: float = None, character_name: str = '') -> int:
     now = datetime.now().isoformat()
     async with aiosqlite.connect(DB_PATH) as db:
         cursor = await db.execute(
-            "INSERT INTO messages (user_id, role, content, emotion_label, emotion_score, created_at) VALUES (?,?,?,?,?,?)",
-            (user_id, role, content, emotion_label, emotion_score, now),
+            "INSERT INTO messages (user_id, character_name, role, content, emotion_label, emotion_score, created_at) VALUES (?,?,?,?,?,?,?)",
+            (user_id, character_name, role, content, emotion_label, emotion_score, now),
         )
         await db.commit()
         return cursor.lastrowid
@@ -132,19 +138,23 @@ async def clear_messages(user_id: int):
         await db.commit()
 
 
-async def get_recent_messages(user_id: int, limit: int = 30) -> list[dict]:
+async def get_recent_messages(user_id: int, limit: int = 30, character_name: str = '') -> list[dict]:
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
         cursor = await db.execute(
-            "SELECT * FROM messages WHERE user_id=? ORDER BY created_at DESC LIMIT ?", (user_id, limit)
+            "SELECT * FROM messages WHERE user_id=? AND character_name=? ORDER BY created_at DESC LIMIT ?",
+            (user_id, character_name, limit)
         )
         rows = await cursor.fetchall()
         return list(reversed([dict(r) for r in rows]))
 
 
-async def count_messages(user_id: int) -> int:
+async def count_messages(user_id: int, character_name: str = '') -> int:
     async with aiosqlite.connect(DB_PATH) as db:
-        cursor = await db.execute("SELECT COUNT(*) FROM messages WHERE user_id=? AND role='user'", (user_id,))
+        cursor = await db.execute(
+            "SELECT COUNT(*) FROM messages WHERE user_id=? AND character_name=? AND role='user'",
+            (user_id, character_name)
+        )
         return (await cursor.fetchone())[0]
 
 

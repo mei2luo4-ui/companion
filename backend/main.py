@@ -133,7 +133,8 @@ async def chat(req: ChatRequest, user_id: int = Depends(get_current_user)):
 
 @app.get("/history")
 async def history(limit: int = 30, user_id: int = Depends(get_current_user)):
-    messages = await get_recent_messages(user_id, limit)
+    profile = await get_profile(user_id)
+    messages = await get_recent_messages(user_id, limit, character_name=profile["name"])
     return {"messages": messages}
 
 

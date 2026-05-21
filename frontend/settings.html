@@ -243,7 +243,6 @@ async function saveProfile() {
     method: 'POST',
     body: JSON.stringify({ name: current.name, personality: current.personality, speaking_style: current.style, avatar_emoji: current.avatar }),
   });
-  await authFetch('/history', { method: 'DELETE' });
 }
 
 // ---- 自定义面板 ----
