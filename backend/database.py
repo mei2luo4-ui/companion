@@ -126,6 +126,12 @@ async def add_message(user_id: int, role: str, content: str, emotion_label: str 
         return cursor.lastrowid
 
 
+async def clear_messages(user_id: int):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("DELETE FROM messages WHERE user_id=?", (user_id,))
+        await db.commit()
+
+
 async def get_recent_messages(user_id: int, limit: int = 30) -> list[dict]:
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row

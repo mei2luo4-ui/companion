@@ -92,8 +92,20 @@ async function loadHistory() {
   }
 }
 
+const WELCOME_MESSAGES = {
+  '晓柔': '嗯，你来了。今天过得怎么样？',
+  '星澜': '……是你。有什么事吗。',
+  '糖糖': '哇你终于上线了！我刚才还在想你呢！',
+  '沐雪': '茶刚泡好，坐吧。',
+  '凌霄': '来了。说吧，什么事。',
+  '知微': '你好。有什么想聊的，直接说。',
+  '阿橘': '哎你来啦！正好，我刚捡到个好东西，等会儿给你看。',
+  '诗韵': '你来了……我今天写了一句话，一直想找人说。',
+};
+
 function showWelcome() {
-  appendMessage('assistant', `你好呀！我是${profile.name}，很高兴认识你。今天有什么想聊的吗？`, false);
+  const msg = WELCOME_MESSAGES[profile.name] || `你好呀！我是${profile.name}，很高兴认识你。`;
+  appendMessage('assistant', msg, false);
   scrollToBottom();
 }
 

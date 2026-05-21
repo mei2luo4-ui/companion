@@ -24,6 +24,7 @@ from .database import (
     get_profile,
     update_profile,
     get_recent_messages,
+    clear_messages,
     get_pending_events,
     dismiss_event,
     add_diary,
@@ -134,6 +135,12 @@ async def chat(req: ChatRequest, user_id: int = Depends(get_current_user)):
 async def history(limit: int = 30, user_id: int = Depends(get_current_user)):
     messages = await get_recent_messages(user_id, limit)
     return {"messages": messages}
+
+
+@app.delete("/history")
+async def delete_history(user_id: int = Depends(get_current_user)):
+    await clear_messages(user_id)
+    return {"ok": True}
 
 
 @app.get("/events/pending")
