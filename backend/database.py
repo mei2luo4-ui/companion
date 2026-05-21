@@ -253,6 +253,16 @@ async def get_recent_user_emotions(user_id: int, limit: int = 5) -> list[dict]:
         return [dict(r) for r in rows]
 
 
+async def get_last_user_message_time(user_id: int) -> str | None:
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute(
+            "SELECT created_at FROM messages WHERE user_id=? AND role='user' ORDER BY created_at DESC LIMIT 1",
+            (user_id,),
+        )
+        row = await cursor.fetchone()
+        return row[0] if row else None
+
+
 async def add_event(user_id: int, type_: str, title: str, content: str, scheduled_at: str) -> int:
     now = datetime.now().isoformat()
     async with aiosqlite.connect(DB_PATH) as db:

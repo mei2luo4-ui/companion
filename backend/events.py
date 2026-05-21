@@ -24,6 +24,13 @@ async def check_and_generate_events():
 
 
 async def _check_for_user(user_id: int):
+    # 用户超过30分钟没有发消息，跳过生成
+    last_time = await db.get_last_user_message_time(user_id)
+    if last_time:
+        inactive_seconds = (datetime.now() - datetime.fromisoformat(last_time)).total_seconds()
+        if inactive_seconds > 1800:
+            return
+
     now = datetime.now()
     hour = now.hour
     profile = await db.get_profile(user_id)
@@ -46,8 +53,8 @@ async def _check_for_user(user_id: int):
         if random.random() < 0.3:
             await _create_lore_event(user_id, profile)
 
-    # 动态：每次轮询有30%概率生成一条
-    if random.random() < 0.3:
+    # 动态：每次轮询有50%概率生成一条
+    if random.random() < 0.5:
         random_profile = random.choice(companion.ALL_CHARACTER_PROFILES)
         await _create_moment_post(user_id, random_profile, recent_emotions)
 
@@ -121,5 +128,5 @@ async def event_scheduler_loop():
             await check_and_generate_events()
         except Exception:
             pass
-        # 每 3~8 分钟检查一次
-        await asyncio.sleep(random.randint(180, 480))
+        # 每 3~5 分钟检查一次
+        await asyncio.sleep(random.randint(180, 300))
