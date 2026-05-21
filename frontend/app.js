@@ -99,8 +99,8 @@ const WELCOME_MESSAGES = {
 };
 
 function showWelcome() {
-  const msg = WELCOME_MESSAGES[profile.name] || `你好呀！我是${profile.name}，很高兴认识你。`;
-  appendMessage('assistant', msg, false);
+  const msg = WELCOME_MESSAGES[profile.name];
+  if (msg) appendMessage('assistant', msg, false);
   scrollToBottom();
 }
 
